@@ -13,7 +13,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * Created by Elec332 on 03/04/2021
+ * Created by Elec332 on 21-10-2020
  */
 public class Main {
 
@@ -24,6 +24,7 @@ public class Main {
     private static final String TOKEN;
     public static final String PS2_SID;
 
+    //Start bot and load server mappings from file
     @SuppressWarnings("unchecked")
     public static void main(String... args) throws Exception {
         File sm = new File(ROOT, "servermapping.pbm");
@@ -55,6 +56,7 @@ public class Main {
         }
     }
 
+    //Load bot properties & tokens
     static {
         try {
             ROOT = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();

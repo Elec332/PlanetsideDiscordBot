@@ -11,8 +11,10 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.AbstractMap;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by Elec332 on 03/04/2021
@@ -23,6 +25,9 @@ public class Util {
     public static Gson GSON = new GsonBuilder().setLenient().setPrettyPrinting().create();
     public static final DecimalFormat NUMBER_FORMAT = new DecimalFormat("#0.00");
 
+    /**
+     * Invokes a call to the Planetside2 Census API
+     */
     @SuppressWarnings("all")
     public static JsonObject invokeAPI(String root, String command) {
         try {
@@ -38,6 +43,9 @@ public class Util {
         }
     }
 
+    /**
+     * Returns the root JSON object if the expected array size is 1
+     */
     public static JsonObject getOneObject(JsonObject jo) {
         if (jo.has(RETURNED) && jo.get(RETURNED).getAsInt() == 1) {
             return jo.getAsJsonArray(jo.keySet().stream().filter(s -> !s.equals(RETURNED)).findFirst().orElseThrow(NullPointerException::new)).get(0).getAsJsonObject();
@@ -45,26 +53,13 @@ public class Util {
         throw new RuntimeException("API didn't return expected result!");
     }
 
-    public static List<String> getDailyKDInfo(Collection<String> uidList) {
-        Map<String, Map.Entry<JsonObject, JsonObject>> data = getKDInfoHistory(uidList);
-        Map<Float, String> map = new LinkedHashMap<>();
-        data.forEach((name, kd) -> {
-            int k = Integer.parseInt(kd.getKey().getAsJsonObject("day").get("d01").getAsString());
-            if (k == 0) {
-                return;
-            }
-            float d = Integer.parseInt(kd.getValue().getAsJsonObject("day").get("d01").getAsString());
-            float kdr = k / d;
-            String kds = k < 15 ? "---" : NUMBER_FORMAT.format(kdr);
-            map.put(kdr, name + "|" + "K/D: " + kds + "  Kills: " + k);
-        });
-        return map.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByKey(Comparator.reverseOrder()))
-                .map(Map.Entry::getValue)
-                .collect(Collectors.toList());
+    public static JsonObject getOutfitObject(String outfitId) {
+        return Util.getOneObject(Util.invokeAPI("outfit", "outfit_id=" + outfitId + "&c:resolve=member_character(times)"));
     }
 
+    /**
+     * Gets the Kill and Death JSON objects for the provided List with player UID's
+     */
     public static Map<String, Map.Entry<JsonObject, JsonObject>> getKDInfoHistory(Collection<String> uidList) {
         Map<String, Map.Entry<JsonObject, JsonObject>> ret = new HashMap<>();
         String uid = String.join(",", uidList);
