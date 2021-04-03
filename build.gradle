@@ -1,0 +1,29 @@
+plugins {
+    id "application"
+    id "com.github.johnrengelman.shadow" version "6.1.0"
+}
+
+group 'nl.elec332.bot.discord.ps2outfits'
+version '1.0-SNAPSHOT'
+mainClassName = group + ".Main"
+
+sourceCompatibility = targetCompatibility = 8
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    compile ('net.dv8tion:JDA:4.2.0_209') {
+        exclude module: 'opus-java'
+    }
+    compile "com.google.code.gson:gson:2.8.6"
+}
+
+tasks.jar.enabled = false
+tasks.build.dependsOn(shadowJar)
+
+shadowJar {
+    minimize()
+}
