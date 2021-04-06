@@ -1,10 +1,10 @@
 package nl.elec332.bot.discord.ps2outfits;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.TextChannel;
+import nl.elec332.bot.discord.ps2outfits.util.Outfit;
 
 import java.time.Instant;
 import java.util.*;
@@ -30,24 +30,11 @@ public class CommandHelper {
         return getKDInfo(uidList, o -> o.getAsJsonObject("month").get("m01"));
     }
 
-    public static void postPlayerKDData(TextChannel channel, String outfitID, String last, Instant since, Function<List<String>, List<Map.Entry<String, String>>> kdGetter) {
-        JsonObject outfit = Util.getOutfitObject(outfitID);
-        JsonArray users = outfit.getAsJsonArray("members");
-        ;
-        List<String> onlineMembers = new ArrayList<>();
-        for (int i = 0; i < users.size(); i++) {
-            JsonObject member = users.get(i).getAsJsonObject();
-            JsonObject times = member.getAsJsonObject("times");
-            if (times == null) {
-                continue;
-            }
-            Instant lastLogon = Instant.ofEpochSecond(Long.parseLong(times.get("last_login").getAsString()));
-            if (lastLogon.isAfter(since)) {
-                onlineMembers.add(member.get("character_id").getAsString());
-            }
-        }
-        String title = outfit.get("name").getAsString() + " KD info";
-        String description = "Out of " + users.size() + " members, " + onlineMembers.size() + " have been online " + last;
+    public static void postPlayerData(TextChannel channel, String outfitID, String timeString, Instant since, Function<List<String>, List<Map.Entry<String, String>>> kdGetter) {
+        Outfit outfit = Outfit.getOutfit(outfitID);
+        List<String> onlineMembers = outfit.getOnlinePlayersBefore(since);
+        String title = outfit.getName() + " KD info";
+        String description = "Out of " + outfit.getMembers() + " members, " + onlineMembers.size() + " have been online " + timeString;
         List<Map.Entry<String, String>> info = kdGetter.apply(onlineMembers);
         if (info.size() != onlineMembers.size()) {
             description += "\n (" + info.size() + " members were active in that period)";
@@ -95,10 +82,10 @@ public class CommandHelper {
             if (k == 0) {
                 return;
             }
-            float d = Integer.parseInt(getter.apply(kd.getValue()).getAsString());
+            float d = Math.max(1, Integer.parseInt(getter.apply(kd.getValue()).getAsString()));
             float kdr = k / d;
             String kds = Util.NUMBER_FORMAT.format(kdr);
-            if (k < 15) {
+            if (k < 15 || d < 2) {
                 kdr = -1 + kdr / 100;
                 kds = "---";
             }

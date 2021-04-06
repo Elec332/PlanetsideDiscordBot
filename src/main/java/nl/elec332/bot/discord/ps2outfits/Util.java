@@ -15,6 +15,7 @@ import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by Elec332 on 03/04/2021
@@ -46,7 +47,7 @@ public class Util {
     /**
      * Returns the root JSON object if the expected array size is 1
      */
-    public static JsonObject getOneObject(JsonObject jo) {
+    public static JsonObject getRootArray(JsonObject jo) {
         if (jo.has(RETURNED) && jo.get(RETURNED).getAsInt() == 1) {
             return jo.getAsJsonArray(jo.keySet().stream().filter(s -> !s.equals(RETURNED)).findFirst().orElseThrow(NullPointerException::new)).get(0).getAsJsonObject();
         }
@@ -54,7 +55,35 @@ public class Util {
     }
 
     public static JsonObject getOutfitObject(String outfitId) {
-        return Util.getOneObject(Util.invokeAPI("outfit", "outfit_id=" + outfitId + "&c:resolve=member_character(times)"));
+        return Util.getRootArray(Util.invokeAPI("outfit", "outfit_id=" + outfitId + "&c:resolve=member_character(times)"));
+    }
+
+    public static JsonArray getPlayerData(Collection<String> uidList, String... requests) {
+        if (requests.length == 0) {
+            throw new UnsupportedOperationException();
+        }
+        String uid = String.join(",", uidList);
+        JsonObject root = invokeAPI("character", "character_id=" + uid + "&c:resolve=" + String.join(",", requests));
+        if (root.has(RETURNED) && root.get(RETURNED).getAsInt() == uidList.size()) {
+            return root.getAsJsonArray("character_list");
+        }
+        throw new RuntimeException();
+    }
+
+    public static Map<String, JsonArray> getPlayerObject(Collection<String> uidList, String request, String object) {
+        Map<String, JsonArray> ret = new HashMap<>();
+        JsonArray array = getPlayerData(uidList, request);
+        String[] obj = object.split("\\.");
+        for (int i = 0; i < array.size(); i++) {
+            JsonObject jo = array.get(i).getAsJsonObject();
+            String name = jo.getAsJsonObject("name").get("first").getAsString();
+            for (int j = 0; j < obj.length - 1; j++) {
+                jo = jo.getAsJsonObject(obj[j]);
+            }
+            JsonArray stats = jo.getAsJsonArray(obj[obj.length - 1]);
+            ret.put(name, stats);
+        }
+        return ret;
     }
 
     /**
@@ -62,34 +91,27 @@ public class Util {
      */
     public static Map<String, Map.Entry<JsonObject, JsonObject>> getKDInfoHistory(Collection<String> uidList) {
         Map<String, Map.Entry<JsonObject, JsonObject>> ret = new HashMap<>();
-        String uid = String.join(",", uidList);
-        JsonObject root = invokeAPI("character", "character_id=" + uid + "&c:resolve=stat_history");
-        if (root.has(RETURNED) && root.get(RETURNED).getAsInt() == uidList.size()) {
-            JsonArray array = root.getAsJsonArray("character_list");
-            for (int i = 0; i < array.size(); i++) {
-                JsonObject jo = array.get(i).getAsJsonObject();
-                String name = jo.getAsJsonObject("name").get("first").getAsString();
-                JsonArray stats = jo.getAsJsonObject("stats").getAsJsonArray("stat_history");
-                JsonObject kills = null, deaths = null;
-                for (int j = 0; j < stats.size(); j++) {
-                    JsonObject so = stats.get(j).getAsJsonObject();
-                    String statName = so.get("stat_name").getAsString();
-                    if (statName.equals("deaths")) {
-                        deaths = so;
-                    } else if (statName.equals("kills")) {
-                        kills = so;
+        return getPlayerObject(uidList, "stat_history", "stats.stat_history").entrySet().stream()
+                .map(e -> {
+                    JsonObject kills = null, deaths = null;
+                    for (int j = 0; j < e.getValue().size(); j++) {
+                        JsonObject so = e.getValue().get(j).getAsJsonObject();
+                        String statName = so.get("stat_name").getAsString();
+                        if (statName.equals("deaths")) {
+                            deaths = so;
+                        } else if (statName.equals("kills")) {
+                            kills = so;
+                        }
+                        if (deaths != null && kills != null) {
+                            break;
+                        }
                     }
-                    if (deaths != null && kills != null) {
-                        break;
+                    if (kills == null || deaths == null) {
+                        throw new RuntimeException("Failed to fetch K/D history!");
                     }
-                }
-                if (kills == null || deaths == null) {
-                    throw new RuntimeException("Failed to fetch K/D history!");
-                }
-                ret.put(name, new AbstractMap.SimpleEntry<>(kills, deaths));
-            }
-        }
-        return ret;
+                    return new AbstractMap.SimpleEntry<>(e.getKey(), new AbstractMap.SimpleEntry<>(kills, deaths));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
 }

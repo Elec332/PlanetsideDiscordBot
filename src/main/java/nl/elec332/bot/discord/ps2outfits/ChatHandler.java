@@ -63,7 +63,7 @@ public class ChatHandler extends ListenerAdapter {
                 return;
             }
             for (Commands cmd : Commands.values()) {
-                if (command.equals(cmd.toString().toLowerCase(Locale.ROOT))) {
+                if (command.equals(cmd.toString().toLowerCase(Locale.ROOT)) || cmd.getAliases().contains(command)) {
                     cmd.executeCommand(channel, outfit);
                     return;
                 }
