@@ -64,13 +64,14 @@ public class ChatHandler extends ListenerAdapter {
             }
             for (Commands cmd : Commands.values()) {
                 if (command.equals(cmd.toString().toLowerCase(Locale.ROOT)) || cmd.getAliases().contains(command)) {
-                    cmd.executeCommand(channel, outfit);
+                    cmd.executeCommand(channel, outfit, args);
                     return;
                 }
             }
 
         } catch (Exception e) {
-            channel.sendMessage("Failed to process command, message: " + e.getMessage()).submit();
+            e.printStackTrace(System.out);
+            channel.sendMessage("Failed to process command, (Type: " + e.getClass().getName() + ") message: " + e.getMessage()).submit();
         }
     }
 

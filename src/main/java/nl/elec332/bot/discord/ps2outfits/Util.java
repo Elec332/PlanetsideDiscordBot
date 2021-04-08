@@ -29,10 +29,14 @@ public class Util {
     /**
      * Invokes a call to the Planetside2 Census API
      */
-    @SuppressWarnings("all")
     public static JsonObject invokeAPI(String root, String command) {
+        return readJsonFromURL("https://census.daybreakgames.com/" + Main.PS2_SID + "/get/ps2:v2/" + root + "/?" + command.replace(" ", "%20"));
+    }
+
+    @SuppressWarnings("all")
+    public static JsonObject readJsonFromURL(String url) {
         try {
-            InputStream is = new URL("https://census.daybreakgames.com/" + Main.PS2_SID + "/get/ps2:v2/" + root + "/?" + command.replace(" ", "%20")).openStream();
+            InputStream is = new URL(url).openStream();
             try {
                 BufferedReader rd = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
                 return GSON.fromJson(rd, JsonObject.class);
@@ -40,7 +44,7 @@ public class Util {
                 is.close();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to poke API!");
+            throw new RuntimeException("Failed to poke API!", e);
         }
     }
 
@@ -89,9 +93,8 @@ public class Util {
     /**
      * Gets the Kill and Death JSON objects for the provided List with player UID's
      */
-    public static Map<String, Map.Entry<JsonObject, JsonObject>> getKDInfoHistory(Collection<String> uidList) {
-        Map<String, Map.Entry<JsonObject, JsonObject>> ret = new HashMap<>();
-        return getPlayerObject(uidList, "stat_history", "stats.stat_history").entrySet().stream()
+    public static Map<String, Map.Entry<JsonObject, JsonObject>> getKDInfoHistory(Map<String, JsonArray> historyStats) {
+        return historyStats.entrySet().stream()
                 .map(e -> {
                     JsonObject kills = null, deaths = null;
                     for (int j = 0; j < e.getValue().size(); j++) {

@@ -1,10 +1,12 @@
 package nl.elec332.bot.discord.ps2outfits;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.TextChannel;
 import nl.elec332.bot.discord.ps2outfits.util.Outfit;
+import nl.elec332.bot.discord.ps2outfits.util.PS2Server;
 
 import java.time.Instant;
 import java.util.*;
@@ -18,16 +20,21 @@ public class CommandHelper {
 
     private static final int MAX_CHARS = 5500;
 
-    public static List<Map.Entry<String, String>> getDailyKDInfo(Collection<String> uidList) {
-        return getKDInfo(uidList, o -> o.getAsJsonObject("day").get("d01"));
-    }
+    public static final Function<JsonObject, JsonElement> DAILY = o -> o.getAsJsonObject("day").get("d01");
+    public static final Function<JsonObject, JsonElement> WEEKLY = o -> o.getAsJsonObject("week").get("w01");
+    public static final Function<JsonObject, JsonElement> MONTHLY = o -> o.getAsJsonObject("month").get("m01");
 
-    public static List<Map.Entry<String, String>> getWeeklyKDInfo(Collection<String> uidList) {
-        return getKDInfo(uidList, o -> o.getAsJsonObject("week").get("w01"));
-    }
+    public static void postServerData(TextChannel channel, PS2Server server) {
+        JsonObject o = Util.readJsonFromURL("https://ps2.fisu.pw/api/population/?world=" + server.getId());
+        o = o.getAsJsonArray("result").get(0).getAsJsonObject();
+        EmbedBuilder builder = new EmbedBuilder()
+                .setTitle("Cobalt server status")
+                .addField("NC", "" + o.get("nc").getAsInt(), false)
+                .addField("TR", "" + o.get("tr").getAsInt(), false)
+                .addField("VS", "" + o.get("vs").getAsInt(), false)
+                .addField("NS", "" + o.get("ns").getAsInt(), false);
 
-    public static List<Map.Entry<String, String>> getMonthlyKDInfo(Collection<String> uidList) {
-        return getKDInfo(uidList, o -> o.getAsJsonObject("month").get("m01"));
+        channel.sendMessage(builder.build()).submit();
     }
 
     public static void postPlayerData(TextChannel channel, String outfitID, String timeString, Instant since, Function<List<String>, List<Map.Entry<String, String>>> kdGetter) {
@@ -74,8 +81,12 @@ public class CommandHelper {
         }
     }
 
-    private static List<Map.Entry<String, String>> getKDInfo(Collection<String> uidList, Function<JsonObject, JsonElement> getter) {
-        Map<String, Map.Entry<JsonObject, JsonObject>> data = Util.getKDInfoHistory(uidList);
+    public static List<Map.Entry<String, String>> getKDInfo(Collection<String> uidList, Function<JsonObject, JsonElement> getter) {
+        return getKDInfo(Util.getPlayerObject(uidList, "stat_history", "stats.stat_history"), getter);
+    }
+
+    public static List<Map.Entry<String, String>> getKDInfo(Map<String, JsonArray> historyStats, Function<JsonObject, JsonElement> getter) {
+        Map<String, Map.Entry<JsonObject, JsonObject>> data = Util.getKDInfoHistory(historyStats);
         Map<Float, String> map = new LinkedHashMap<>();
         data.forEach((name, kd) -> {
             int k = Integer.parseInt(getter.apply(kd.getKey()).getAsString());
