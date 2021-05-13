@@ -2,6 +2,9 @@ package nl.elec332.bot.discord.ps2outfits;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import nl.elec332.planetside2.api.IPS2APIAccessor;
+import nl.elec332.planetside2.api.objects.IPS2API;
+import nl.elec332.planetside2.util.NetworkUtil;
 
 import javax.security.auth.login.LoginException;
 import java.io.*;
@@ -17,12 +20,16 @@ import java.util.zip.GZIPOutputStream;
  */
 public class Main {
 
+    public static final String INVITE_URL = "https://discord.com/api/oauth2/authorize?client_id=827934989764788259&permissions=313408&scope=bot";
+
     private static final String TOKEN_PROP = "discordToken";
     private static final String PS2_SID_PROP = "ps2ServiceID";
 
     private static final File ROOT;
     private static final String TOKEN;
     public static final String PS2_SID;
+
+    public static IPS2API API;
 
     //Start bot and load server mappings from file
     @SuppressWarnings("unchecked")
@@ -50,6 +57,9 @@ public class Main {
                     .addEventListeners(new ChatHandler(m, save))
                     .build();
             jda.awaitReady();
+            IPS2APIAccessor accessor = NetworkUtil.getAPIAccessor();//ServiceLoader.load(IPS2APIAccessor.class).findFirst().get();
+            accessor.setServiceId(PS2_SID);
+            API = accessor.getAPI();
             System.out.println("Finished Building JDA!");
         } catch (LoginException | InterruptedException e) {
             e.printStackTrace();
@@ -60,6 +70,7 @@ public class Main {
     static {
         try {
             ROOT = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
+            System.out.println("Reading properties file: " + ROOT);
             Properties appProps = new Properties();
             File f = new File(ROOT, "bot.properties");
             if (!f.exists()) {

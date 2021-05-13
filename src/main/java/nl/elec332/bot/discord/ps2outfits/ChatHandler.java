@@ -1,11 +1,12 @@
 package nl.elec332.bot.discord.ps2outfits;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.exceptions.InsufficientPermissionException;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import nl.elec332.planetside2.api.objects.player.IOutfit;
 
 import java.util.Locale;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class ChatHandler extends ListenerAdapter {
         this.save = save;
     }
 
+    private static final String BANNED = "<>[]";
     private final Map<String, String> serverMapping;
     private final Runnable save;
 
@@ -42,11 +44,11 @@ public class ChatHandler extends ListenerAdapter {
             String args = msg.replace(command, "").trim();
 
             if (member == null || event.isWebhookMessage()) {
-                textChannel.sendMessage("You cannot send commands from a webhook!");
+                textChannel.sendMessage("You cannot send commands from a webhook!").submit();
                 return;
             }
 
-            System.out.printf("(%s)[%s]<%s>: %s\n", guild.getName(), textChannel.getName(), member.getEffectiveName(), msg);
+            System.out.printf("(%s {%s})[%s {%s}]<%s>: %s\n", guild.getName(), guild.getId(), textChannel.getName(), textChannel.getId(), member.getEffectiveName(), msg);
             processCommand(textChannel, command, args, member, guild.getId());
         }
     }
@@ -57,18 +59,29 @@ public class ChatHandler extends ListenerAdapter {
                 setOutfitCommand(channel, member, args, serverId);
                 return;
             }
-            String outfit = serverMapping.get(serverId);
-            if (outfit == null || outfit.isEmpty()) {
-                channel.sendMessage("Please set an outfit before sending commands!").submit();
-                return;
-            }
             for (Commands cmd : Commands.values()) {
                 if (command.equals(cmd.toString().toLowerCase(Locale.ROOT)) || cmd.getAliases().contains(command)) {
-                    cmd.executeCommand(channel, outfit, args);
+                    cmd.executeCommand(channel, args);
                     return;
                 }
             }
-
+            for (OutfitCommands cmd : OutfitCommands.values()) {
+                if (command.equals(cmd.toString().toLowerCase(Locale.ROOT)) || cmd.getAliases().contains(command)) {
+                    String outfit = serverMapping.get(serverId);
+                    if (outfit == null || outfit.isEmpty()) {
+                        channel.sendMessage("You need to set an outfit for this server before you can use this command!").submit();
+                        return;
+                    }
+                    IOutfit outfitInstance = Main.API.getOutfitManager().getCached(Long.parseLong(outfit));
+                    if (outfitInstance == null) {
+                        channel.sendMessage("Outfit not found!").submit();
+                        return;
+                    }
+                    cmd.executeCommand(channel, outfitInstance, args);
+                }
+            }
+        } catch (InsufficientPermissionException e) {
+            channel.sendMessage("The bot has insufficient permissions to perform this command!\n Please re-invite the bot with the following link. (Settings will be saved)\n" + Main.INVITE_URL).submit();
         } catch (Exception e) {
             e.printStackTrace(System.out);
             channel.sendMessage("Failed to process command, (Type: " + e.getClass().getName() + ") message: " + e.getMessage()).submit();
@@ -77,21 +90,21 @@ public class ChatHandler extends ListenerAdapter {
 
     private void setOutfitCommand(TextChannel channel, Member member, String args, String serverId) {
         if (member.hasPermission(Permission.ADMINISTRATOR)) {
-            JsonObject jo = Util.invokeAPI("outfit", "name=" + args);
-            JsonElement je = jo.get("returned");
-            if (je == null || je.getAsInt() != 1) {
-                jo = Util.invokeAPI("outfit", "alias=" + args);
-                je = jo.get("returned");
-                if (je == null || je.getAsInt() != 1) {
-                    channel.sendMessage("Failed to find outfit: \"" + args + "\"").submit();
+            for (char c : BANNED.toCharArray()) {
+                if (args.contains("" + c)) {
+                    channel.sendMessage("An outfit name or tag cannot contain any of the following characters: \"" + BANNED + "\"").submit();
                     return;
                 }
             }
-            je = jo.get("outfit_list").getAsJsonArray().get(0);
-            String outId = je.getAsJsonObject().get("outfit_id").getAsString();
-            serverMapping.put(serverId, outId);
+            IOutfit outfit = Main.API.getOutfitManager().getByName(args);
+            if (outfit == null) {
+                channel.sendMessage("Failed to find outfit: \"" + args + "\"\nPlease make sure you give the bot your full outfit name or outfit tag.").submit();
+                return;
+            }
+
+            serverMapping.put(serverId, outfit.getId() + "");
             save.run();
-            channel.sendMessage("Successfully set outfit ID to: " + outId + " for this server!").submit();
+            channel.sendMessage("Successfully set outfit ID to: " + outfit.getId() + " (" + outfit.getName() + ") for this server!").submit();
         } else {
             channel.sendMessage("You can only use this command as an administrator!").submit();
         }

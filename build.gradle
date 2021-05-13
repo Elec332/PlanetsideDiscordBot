@@ -7,18 +7,23 @@ group 'nl.elec332.bot.discord.ps2outfits'
 version '1.0-SNAPSHOT'
 mainClassName = group + ".Main"
 
-sourceCompatibility = targetCompatibility = 8
+sourceCompatibility = targetCompatibility = 11
 
 repositories {
     mavenCentral()
-    jcenter()
+    maven {
+        url 'https://m2.dv8tion.net/releases'
+    }
 }
 
 dependencies {
-    compile ('net.dv8tion:JDA:4.2.0_209') {
+    implementation ('net.dv8tion:JDA:4.2.1_262') {
         exclude module: 'opus-java'
     }
-    compile "com.google.code.gson:gson:2.8.6"
+    implementation "com.google.code.gson:gson:2.8.6"
+    implementation "com.fasterxml.jackson.core:jackson-core:2.12.3"
+    //implementation "nl.elec332.planetside2:PlanetSide2API:1.0-SNAPSHOT"
+    implementation project(":planetside2api")
 }
 
 tasks.jar.enabled = false
