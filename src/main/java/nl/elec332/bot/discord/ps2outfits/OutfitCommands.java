@@ -3,23 +3,30 @@ package nl.elec332.bot.discord.ps2outfits;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.utils.concurrent.Task;
 import nl.elec332.planetside2.api.objects.player.IOutfit;
 import nl.elec332.planetside2.api.objects.player.IOutfitMember;
 import nl.elec332.planetside2.api.objects.player.IPlayerResponseList;
 import nl.elec332.planetside2.api.objects.player.request.ICharacterStat;
 import nl.elec332.planetside2.api.objects.player.request.ICharacterStatHistory;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFColor;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.awt.Color;
+import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.*;
 
 /**
  * Created by Elec332 on 27/04/2021
@@ -147,7 +154,6 @@ public enum OutfitCommands {
         }
     },
     EXPORTMEMBERS("Exports the current members (with rank, activity and discord name) to a xlsx") {
-
         @Override
         public void executeCommand(TextChannel channel, IOutfit outfit, String... args) {
             XSSFWorkbook workbook = new XSSFWorkbook();
@@ -172,48 +178,67 @@ public enum OutfitCommands {
             Instant twoMonths = Instant.now().minus(60, ChronoUnit.DAYS);
 
             AtomicInteger counter = new AtomicInteger(2);
-            outfit.getOutfitMemberInfo().stream()
-                    .sorted(Comparator.comparing(IOutfitMember::getRankIndex).thenComparing(Collections.reverseOrder(Comparator.comparing(IOutfitMember::getLastPlayerActivity))))
-                    .forEach(m -> {
-                        Row row = sheet.createRow(counter.getAndIncrement());
+            Task<List<Member>> mt = channel.getGuild().loadMembers();
+            int col2 = col;
 
-                        row.createCell(name).setCellValue(m.getPlayerName());
-                        String pnLower = m.getPlayerName().toLowerCase(Locale.ROOT);
-                        String dcName = channel.getMembers().stream()
-                                .filter(m2 -> {
-                                    String nl = m2.getEffectiveName().toLowerCase(Locale.ROOT);
-                                    return pnLower.contains(nl) || nl.contains(pnLower);
-                                })
-                                .findFirst()
-                                .map(Member::getEffectiveName)
-                                .orElse("-");
-                        row.createCell(discord).setCellValue(dcName);
-                        Cell cell = row.createCell(lastOnline);
-                        Instant active = m.getLastPlayerActivity();
-                        cell.setCellValue(active.toString());
-                        if (active.isBefore(twoMonths)) {
-                            cell.setCellStyle(red);
-                        } else if (active.isBefore(lastMonth)) {
-                            cell.setCellStyle(orange);
-                        }
-                        row.createCell(rank).setCellValue(m.getRankName());
-                    });
-            for (int i = 0; i < col + 1; i++) {
-                sheet.autoSizeColumn(i);
-            }
+            mt.onSuccess(members -> {
+                outfit.getOutfitMemberInfo().stream()
+                        .sorted(Comparator.comparing(IOutfitMember::getRankIndex).thenComparing(Collections.reverseOrder(Comparator.comparing(IOutfitMember::getLastPlayerActivity))))
+                        .forEach(m -> {
+                            Row row = sheet.createRow(counter.getAndIncrement());
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            workbook.getProperties().getCoreProperties().setCreator("PS2OutfitStats Bot");
-            workbook.getProperties().getExtendedProperties().getUnderlyingProperties().setApplication("PS2OutfitStats");
-            try {
-                workbook.write(bos);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-            channel.sendFile(bos.toByteArray(), "outfitmembers.xlsx").submit();
+                            row.createCell(name).setCellValue(m.getPlayerName());
+                            String pnLower = m.getPlayerName().toLowerCase(Locale.ROOT);
+                            String pnLowerSub = pnLower.length() > 9 ? pnLower.substring(2, pnLower.length() - 2) : null;
+                            String dcName = members.stream()
+                                    .map(Member::getEffectiveName)
+                                    .filter(m2 -> pnLower.equalsIgnoreCase(m2) || m2.equalsIgnoreCase(pnLower))
+                                    .findFirst()
+                                    .orElse(members.stream()
+                                            .map(Member::getEffectiveName)
+                                            .filter(s -> s.length() >= 6)
+                                            .filter(m2 -> {
+                                                String nl = m2.toLowerCase(Locale.ROOT);
+                                                return pnLower.contains(nl) || nl.contains(pnLower);
+                                            })
+                                            .findFirst()
+                                            .orElse(pnLowerSub == null ? "-" : members.stream()
+                                                    .map(Member::getEffectiveName)
+                                                    .filter(m2 -> {
+                                                        String nl = m2.toLowerCase(Locale.ROOT);
+                                                        return pnLowerSub.contains(nl) || nl.contains(pnLowerSub);
+                                                    })
+                                                    .findFirst()
+                                                    .orElse("-")
+                                            )
+                                    );
+                            row.createCell(discord).setCellValue(dcName);
+                            Cell cell = row.createCell(lastOnline);
+                            Instant active = m.getLastPlayerActivity();
+                            cell.setCellValue(active.toString());
+                            if (active.isBefore(twoMonths)) {
+                                cell.setCellStyle(red);
+                            } else if (active.isBefore(lastMonth)) {
+                                cell.setCellStyle(orange);
+                            }
+                            row.createCell(rank).setCellValue(m.getRankName());
+                        });
+                for (int i = 0; i < col2 + 1; i++) {
+                    sheet.autoSizeColumn(i);
+                }
+
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                workbook.getProperties().getCoreProperties().setCreator("PS2OutfitStats Bot");
+                workbook.getProperties().getExtendedProperties().getUnderlyingProperties().setApplication("PS2OutfitStats");
+                try {
+                    workbook.write(bos);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+                channel.sendFile(bos.toByteArray(), "outfitmembers.xlsx").submit().join().delete().queueAfter(30, TimeUnit.SECONDS);
+            });
         }
-    }
-    ;
+    };
 
     OutfitCommands(String help) {
         this(help, "");

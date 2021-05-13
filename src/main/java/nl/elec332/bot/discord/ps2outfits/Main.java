@@ -2,6 +2,7 @@ package nl.elec332.bot.discord.ps2outfits;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import nl.elec332.planetside2.api.IPS2APIAccessor;
 import nl.elec332.planetside2.api.objects.IPS2API;
 import nl.elec332.planetside2.util.NetworkUtil;
@@ -54,7 +55,7 @@ public class Main {
             }
         };
         try {
-            JDA jda = JDABuilder.createDefault(TOKEN).build();
+            JDA jda = JDABuilder.createDefault(TOKEN).enableIntents(GatewayIntent.GUILD_MEMBERS).build();
             jda.awaitReady();
             IPS2APIAccessor accessor = NetworkUtil.getAPIAccessor();//ServiceLoader.load(IPS2APIAccessor.class).findFirst().get();
             accessor.setServiceId(PS2_SID);
