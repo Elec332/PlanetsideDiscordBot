@@ -26,6 +26,7 @@ public class Main {
     private static final String PS2_SID_PROP = "ps2ServiceID";
 
     private static final File ROOT;
+    private static final File EXEC;
     private static final String TOKEN;
     public static final String PS2_SID;
 
@@ -34,7 +35,7 @@ public class Main {
     //Start bot and load server mappings from file
     @SuppressWarnings("unchecked")
     public static void main(String... args) throws Exception {
-        File sm = new File(ROOT, "servermapping.pbm");
+        File sm = getFile("servermapping.pbm");
         Map<String, String> m;
         if (sm.exists()) {
             GZIPInputStream gis = new GZIPInputStream(new FileInputStream(sm));
@@ -53,26 +54,34 @@ public class Main {
             }
         };
         try {
-            JDA jda = JDABuilder.createDefault(TOKEN)
-                    .addEventListeners(new ChatHandler(m, save))
-                    .build();
+            JDA jda = JDABuilder.createDefault(TOKEN).build();
             jda.awaitReady();
             IPS2APIAccessor accessor = NetworkUtil.getAPIAccessor();//ServiceLoader.load(IPS2APIAccessor.class).findFirst().get();
             accessor.setServiceId(PS2_SID);
             API = accessor.getAPI();
+            jda.addEventListener(new ChatHandler(m, save));
             System.out.println("Finished Building JDA!");
         } catch (LoginException | InterruptedException e) {
             e.printStackTrace();
         }
     }
 
+    private static File getFile(String name) {
+        File ret = new File(EXEC, name);
+        if (!ret.exists()) {
+            ret = new File(ROOT, name);
+        }
+        return ret;
+    }
+
     //Load bot properties & tokens
     static {
         try {
             ROOT = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
-            System.out.println("Reading properties file: " + ROOT);
+            EXEC = new File(new File("").getAbsolutePath());
+            File f = getFile("bot.properties");
+            System.out.println("Reading properties file: " + f);
             Properties appProps = new Properties();
-            File f = new File(ROOT, "bot.properties");
             if (!f.exists()) {
                 appProps.put(TOKEN_PROP, "");
                 appProps.put(PS2_SID_PROP, "");

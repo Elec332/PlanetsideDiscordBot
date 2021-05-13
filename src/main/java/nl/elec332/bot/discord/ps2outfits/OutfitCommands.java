@@ -1,17 +1,25 @@
 package nl.elec332.bot.discord.ps2outfits;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import nl.elec332.planetside2.api.objects.player.IOutfit;
+import nl.elec332.planetside2.api.objects.player.IOutfitMember;
 import nl.elec332.planetside2.api.objects.player.IPlayerResponseList;
 import nl.elec332.planetside2.api.objects.player.request.ICharacterStat;
 import nl.elec332.planetside2.api.objects.player.request.ICharacterStatHistory;
 
+import java.awt.Color;
+import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.*;
 
 /**
  * Created by Elec332 on 27/04/2021
@@ -137,7 +145,75 @@ public enum OutfitCommands {
 //            channel.sendMessage(builder.build()).submit();
             channel.sendMessage("//TODO").submit();
         }
-    };
+    },
+    EXPORTMEMBERS("Exports the current members (with rank, activity and discord name) to a xlsx") {
+
+        @Override
+        public void executeCommand(TextChannel channel, IOutfit outfit, String... args) {
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            XSSFSheet sheet = workbook.createSheet("Members");
+            int col = 0;
+            int name = col++;
+            int discord = col++;
+            int lastOnline = col++;
+            int rank = col++;
+            Row main = sheet.createRow(0);
+            main.createCell(name).setCellValue("Name:");
+            main.createCell(discord).setCellValue("Discord Name:");
+            main.createCell(lastOnline).setCellValue("Last Online:");
+            main.createCell(rank).setCellValue("Current Rank:");
+            XSSFCellStyle orange = workbook.createCellStyle();
+            XSSFCellStyle red = workbook.createCellStyle();
+            red.setFillForegroundColor(new XSSFColor(Color.RED, null));
+            red.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            orange.setFillForegroundColor(new XSSFColor(Color.ORANGE, null));
+            orange.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            Instant lastMonth = Instant.now().minus(30, ChronoUnit.DAYS);
+            Instant twoMonths = Instant.now().minus(60, ChronoUnit.DAYS);
+
+            AtomicInteger counter = new AtomicInteger(2);
+            outfit.getOutfitMemberInfo().stream()
+                    .sorted(Comparator.comparing(IOutfitMember::getRankIndex).thenComparing(Collections.reverseOrder(Comparator.comparing(IOutfitMember::getLastPlayerActivity))))
+                    .forEach(m -> {
+                        Row row = sheet.createRow(counter.getAndIncrement());
+
+                        row.createCell(name).setCellValue(m.getPlayerName());
+                        String pnLower = m.getPlayerName().toLowerCase(Locale.ROOT);
+                        String dcName = channel.getMembers().stream()
+                                .filter(m2 -> {
+                                    String nl = m2.getEffectiveName().toLowerCase(Locale.ROOT);
+                                    return pnLower.contains(nl) || nl.contains(pnLower);
+                                })
+                                .findFirst()
+                                .map(Member::getEffectiveName)
+                                .orElse("-");
+                        row.createCell(discord).setCellValue(dcName);
+                        Cell cell = row.createCell(lastOnline);
+                        Instant active = m.getLastPlayerActivity();
+                        cell.setCellValue(active.toString());
+                        if (active.isBefore(twoMonths)) {
+                            cell.setCellStyle(red);
+                        } else if (active.isBefore(lastMonth)) {
+                            cell.setCellStyle(orange);
+                        }
+                        row.createCell(rank).setCellValue(m.getRankName());
+                    });
+            for (int i = 0; i < col + 1; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            workbook.getProperties().getCoreProperties().setCreator("PS2OutfitStats Bot");
+            workbook.getProperties().getExtendedProperties().getUnderlyingProperties().setApplication("PS2OutfitStats");
+            try {
+                workbook.write(bos);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            channel.sendFile(bos.toByteArray(), "outfitmembers.xlsx").submit();
+        }
+    }
+    ;
 
     OutfitCommands(String help) {
         this(help, "");

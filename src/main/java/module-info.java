@@ -8,6 +8,9 @@ module nl.elec332.bot.discord.ps2outfits {
     requires com.fasterxml.jackson.core;
 
     requires nl.elec332.planetside2api;
+    requires org.apache.poi.ooxml;
+    requires org.apache.poi.poi;
+    requires java.desktop;
     uses nl.elec332.planetside2.api.IPS2APIAccessor;
 
 }
