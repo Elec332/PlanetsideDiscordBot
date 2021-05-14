@@ -2,8 +2,10 @@ package nl.elec332.bot.discord.ps2outfits;
 
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import nl.elec332.planetside2.api.objects.player.IOutfit;
+import nl.elec332.planetside2.api.objects.player.IPlayer;
 import nl.elec332.planetside2.api.objects.player.IPlayerResponseList;
 import nl.elec332.planetside2.api.objects.player.request.ICharacterStatHistory;
 import nl.elec332.planetside2.api.objects.world.IServer;
@@ -24,6 +26,26 @@ public class CommandHelper {
     private static final int MAX_FIELDS = 25;
 
     public static final DecimalFormat NUMBER_FORMAT = new DecimalFormat("#0.00");
+
+    public static IPlayer getPlayer(Member member, String name) {
+        if (name != null && !name.isEmpty()) {
+            return Main.API.getPlayerManager().getByName(name);
+        }
+        if (member == null) {
+            return null;
+        }
+        name = member.getEffectiveName();
+        String newName = name;
+        do {
+            name = newName;
+            int i = name.indexOf("[");
+            int j = name.indexOf("]");
+            if (i >= 0 && j >= 0) {
+                newName = name.replace(name.substring(i, j + 1), "").strip();
+            }
+        } while (!name.equalsIgnoreCase(newName));
+        return Main.API.getPlayerManager().getByName(name);
+    }
 
     public static void postServerData(TextChannel channel, IServer server) {
         JsonObject o = NetworkUtil.readJsonFromURL("https://ps2.fisu.pw/api/population/?world=" + server.getId(), false);

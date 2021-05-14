@@ -86,16 +86,17 @@ public enum Commands {
     NOSEGUNKILLS("Shows kills with the non-AI ESF noseguns\n Without parameters it runs for yourself", "playername") {
         @Override
         public void executeCommand(TextChannel channel, Member member, String... args) {
-            String playerName = args.length == 0 ? null : args[0];
-            if (playerName == null || playerName.isEmpty()) {
-                playerName = member.getEffectiveName();
-            }
-            IPlayer player = Main.API.getPlayerManager().getByName(playerName);
+            IPlayer player = CommandHelper.getPlayer(member, args.length == 0 ? null : args[0]);
             if (player == null) {
+                channel.sendMessage("Failed to find player").submit();
                 return;
             }
             IPlayerRequest<IFactionWeaponStat> stats = Main.API.getPlayerRequestHandler().getSlimCharacterWeaponStats(Collections.singleton(player.getId()), PS2ItemSets.ALL_AA_NOSE_GUNS.without(PS2ItemSets.AI_NOSE_GUNS)).getAsList().get(0);
             if (stats == null) {
+                throw new RuntimeException("Null stats");
+            }
+            if (stats.getResponse().isEmpty()) {
+                channel.sendMessage("Couldn't find any nosegun kills for " + player.getName()).submit();
                 return;
             }
             EmbedBuilder builder = new EmbedBuilder()
