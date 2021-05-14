@@ -1,6 +1,7 @@
 package nl.elec332.bot.discord.ps2outfits;
 
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import nl.elec332.planetside2.api.objects.world.IServer;
 
@@ -25,7 +26,7 @@ public enum Commands {
         }
 
         @Override
-        public void executeCommand(TextChannel channel, String... args) {
+        public void executeCommand(TextChannel channel, Member member, String... args) {
             EmbedBuilder builder = new EmbedBuilder()
                     .setTitle("PS2OutfitStats help info")
                     .setDescription("All available commands & descriptions\n\n")
@@ -59,14 +60,14 @@ public enum Commands {
         }
 
         @Override
-        public void executeCommand(TextChannel channel, String... args) {
+        public void executeCommand(TextChannel channel, Member member, String... args) {
             CommandHelper.postServerData(channel, Main.API.getServers().getByName("cobalt"));
         }
 
     },
     SERVERSTATUS("Shows server status", "serverName") {
         @Override
-        public void executeCommand(TextChannel channel, String... args) {
+        public void executeCommand(TextChannel channel, Member member, String... args) {
             if (args.length == 1) {
                 String name = args[0];
                 IServer server = Main.API.getServers().getByName(name);
@@ -112,6 +113,6 @@ public enum Commands {
         return aliases;
     }
 
-    public abstract void executeCommand(TextChannel channel, String... args);
+    public abstract void executeCommand(TextChannel channel, Member member, String... args);
 
 }

@@ -40,8 +40,8 @@ public class CommandHelper {
 
     public static Collection<Map.Entry<String, String>> getKDInfo(IPlayerResponseList<ICharacterStatHistory> historyStats, ToIntFunction<ICharacterStatHistory> getter) {
         return historyStats.streamMappedResponse(p -> {
-            ICharacterStatHistory kills = p.getResponseByName("kills");
-            ICharacterStatHistory deaths = p.getResponseByName("deaths");
+            ICharacterStatHistory kills = p.getFirstResponseByName("kills");
+            ICharacterStatHistory deaths = p.getFirstResponseByName("deaths");
             if (kills == null || deaths == null) {
                 return null;
             }

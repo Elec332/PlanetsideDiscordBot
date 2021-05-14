@@ -60,7 +60,7 @@ public class ChatHandler extends ListenerAdapter {
             }
             for (Commands cmd : Commands.values()) {
                 if (command.equals(cmd.toString().toLowerCase(Locale.ROOT)) || cmd.getAliases().contains(command)) {
-                    cmd.executeCommand(channel, args);
+                    cmd.executeCommand(channel, member, args);
                     return;
                 }
             }
@@ -76,7 +76,7 @@ public class ChatHandler extends ListenerAdapter {
                         channel.sendMessage("Outfit not found!").submit();
                         return;
                     }
-                    cmd.executeCommand(channel, outfitInstance, args);
+                    cmd.executeCommand(channel, member, outfitInstance, args);
                 }
             }
         } catch (InsufficientPermissionException e) {

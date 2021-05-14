@@ -35,28 +35,28 @@ public enum OutfitCommands {
 
     DAILYKD("Shows daily KD stats for everyone in your outfit.") {
         @Override
-        public void executeCommand(TextChannel channel, IOutfit outfit, String... args) {
+        public void executeCommand(TextChannel channel, Member member, IOutfit outfit, String... args) {
             CommandHelper.postKDInfo(channel, outfit, "today", Instant.now().minus(1, ChronoUnit.DAYS), h -> h.getDay(1));
         }
 
     },
     WEEKLYKD("Shows weekly KD stats for everyone in your outfit.") {
         @Override
-        public void executeCommand(TextChannel channel, IOutfit outfit, String... args) {
+        public void executeCommand(TextChannel channel, Member member, IOutfit outfit, String... args) {
             CommandHelper.postKDInfo(channel, outfit, "this week", fromCal(cal -> cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek())), h -> h.getWeek(1));
         }
 
     },
     MONTHLYKD("Shows monthly KD stats for everyone in your outfit.") {
         @Override
-        public void executeCommand(TextChannel channel, IOutfit outfit, String... args) {
+        public void executeCommand(TextChannel channel, Member member, IOutfit outfit, String... args) {
             CommandHelper.postKDInfo(channel, outfit, "this month", fromCal(cal -> cal.set(Calendar.DAY_OF_MONTH, 0)), h -> h.getMonth(1));
         }
 
     },
     DAILYSTATS("Shows daily stats for your outfit.") {
         @Override
-        public void executeCommand(TextChannel channel, IOutfit outfit, String... args) {
+        public void executeCommand(TextChannel channel, Member member, IOutfit outfit, String... args) {
             Collection<Long> onlineMembers = outfit.getPlayerIds(p -> p.getLastPlayerActivity().isAfter(Instant.now().minus(1, ChronoUnit.DAYS)));
             if (onlineMembers.isEmpty()) {
                 channel.sendMessage("No members have been online!").submit();
@@ -90,7 +90,7 @@ public enum OutfitCommands {
                     .collect(Collectors.joining("\n"));
             builder.addField("Assists Top-10", assistStr, false);
 
-            String capDef = historyStats.streamResponse(p -> p.getResponseByName("facility_capture").getDay(1), 0, Comparator.reverseOrder())
+            String capDef = historyStats.streamResponse(p -> p.getFirstResponseByName("facility_capture").getDay(1), 0, Comparator.reverseOrder())
                     .map(e -> e.getKey() + ": " + e.getValue())
                     .limit(10)
                     .collect(Collectors.joining("\n"));
@@ -106,7 +106,7 @@ public enum OutfitCommands {
     },
     BASTIONSTATS("Shows faction bastion statistics") {
         @Override
-        public void executeCommand(TextChannel channel, IOutfit outfit, String... args) {
+        public void executeCommand(TextChannel channel, Member member, IOutfit outfit, String... args) {
             Collection<Long> onlineMembers = outfit.getPlayerIds(p -> p.getLastPlayerActivity().isAfter(Instant.now().minus(30, ChronoUnit.DAYS)));
             if (onlineMembers.isEmpty()) {
                 channel.sendMessage("No members have been online!").submit();
@@ -155,7 +155,7 @@ public enum OutfitCommands {
     },
     EXPORTMEMBERS("Exports the current members (with rank, activity and discord name) to a xlsx") {
         @Override
-        public void executeCommand(TextChannel channel, IOutfit outfit, String... args) {
+        public void executeCommand(TextChannel channel, Member member, IOutfit outfit, String... args) {
             XSSFWorkbook workbook = new XSSFWorkbook();
             XSSFSheet sheet = workbook.createSheet("Members");
             int col = 0;
@@ -270,7 +270,7 @@ public enum OutfitCommands {
         return aliases;
     }
 
-    public abstract void executeCommand(TextChannel channel, IOutfit outfit, String... args);
+    public abstract void executeCommand(TextChannel channel, Member member, IOutfit outfit, String... args);
 
     private static Instant fromCal(Consumer<Calendar> mod) {
         Calendar cal = Calendar.getInstance();
