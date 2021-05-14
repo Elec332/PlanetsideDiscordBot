@@ -3,12 +3,13 @@ package nl.elec332.bot.discord.ps2outfits;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
+import nl.elec332.planetside2.api.objects.player.IPlayer;
+import nl.elec332.planetside2.api.objects.player.IPlayerRequest;
+import nl.elec332.planetside2.api.objects.player.request.IFactionWeaponStat;
 import nl.elec332.planetside2.api.objects.world.IServer;
+import nl.elec332.planetside2.util.PS2ItemSets;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 
 /**
@@ -79,6 +80,34 @@ public enum Commands {
             } else {
                 throw new UnsupportedOperationException("Too many args!");
             }
+        }
+
+    },
+    NOSEGUNKILLS("Shows kills with the non-AI ESF noseguns\n Without parameters it runs for yourself", "playername") {
+        @Override
+        public void executeCommand(TextChannel channel, Member member, String... args) {
+            String playerName = args.length == 0 ? null : args[0];
+            if (playerName == null || playerName.isEmpty()) {
+                playerName = member.getEffectiveName();
+            }
+            IPlayer player = Main.API.getPlayerManager().getByName(playerName);
+            if (player == null) {
+                return;
+            }
+            IPlayerRequest<IFactionWeaponStat> stats = Main.API.getPlayerRequestHandler().getSlimCharacterWeaponStats(Collections.singleton(player.getId()), PS2ItemSets.ALL_AA_NOSE_GUNS.without(PS2ItemSets.AI_NOSE_GUNS)).getAsList().get(0);
+            if (stats == null) {
+                return;
+            }
+            EmbedBuilder builder = new EmbedBuilder()
+                    .setTitle(player.getName() + "'s nosegun kills")
+                    .setDescription("(Kills made with A2G guns do not count)");
+
+            stats.getResponseByName("weapon_kills").forEach(s -> {
+                builder.addField(Main.API.getItems().getCached(s.getItemId()).getName(), "Kills: " + s.getEnemyKills(player.getFaction()), false);
+            });
+
+            builder.addField("Total", "Kills: " + stats.getResponseByName("weapon_kills").mapToInt(IFactionWeaponStat::getTotal).sum(), false);
+            channel.sendMessage(builder.build()).submit();
         }
 
     };
