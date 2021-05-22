@@ -5,7 +5,7 @@ plugins {
 
 group 'nl.elec332.bot.discord.ps2outfits'
 version '1.0-SNAPSHOT'
-mainClassName = group + ".Main"
+mainClassName = group + ".core.Main"
 
 sourceCompatibility = targetCompatibility = 11
 

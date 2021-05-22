@@ -1,4 +1,4 @@
-package nl.elec332.bot.discord.ps2outfits;
+package nl.elec332.bot.discord.ps2outfits.modules;
 
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.EmbedBuilder;
@@ -14,6 +14,7 @@ import nl.elec332.planetside2.util.NetworkUtil;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
@@ -27,9 +28,21 @@ public class CommandHelper {
 
     public static final DecimalFormat NUMBER_FORMAT = new DecimalFormat("#0.00");
 
+    public static Instant fromCal(Consumer<Calendar> mod) {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.clear(Calendar.MINUTE);
+        cal.clear(Calendar.SECOND);
+        cal.clear(Calendar.MILLISECOND);
+
+        mod.accept(cal);
+
+        return Instant.ofEpochMilli(cal.getTimeInMillis());
+    }
+
     public static IPlayer getPlayer(Member member, String name) {
         if (name != null && !name.isEmpty()) {
-            return Main.API.getPlayerManager().getByName(name);
+            return PS2BotConfigurator.API.getPlayerManager().getByName(name);
         }
         if (member == null) {
             return null;
@@ -44,7 +57,7 @@ public class CommandHelper {
                 newName = name.replace(name.substring(i, j + 1), "").strip();
             }
         } while (!name.equalsIgnoreCase(newName));
-        return Main.API.getPlayerManager().getByName(name);
+        return PS2BotConfigurator.API.getPlayerManager().getByName(name);
     }
 
     public static void postServerData(TextChannel channel, IServer server) {
@@ -89,7 +102,7 @@ public class CommandHelper {
             channel.sendMessage("No members have been online!").submit();
             return;
         }
-        IPlayerResponseList<ICharacterStatHistory> historyStats = Main.API.getPlayerRequestHandler().getSlimCharacterStatHistory(onlineMembers, "deaths", "kills");
+        IPlayerResponseList<ICharacterStatHistory> historyStats = PS2BotConfigurator.API.getPlayerRequestHandler().getSlimCharacterStatHistory(onlineMembers, "deaths", "kills");
         String title = outfit.getName() + " KD info";
         String description = "Out of " + outfit.getMembers() + " members, " + onlineMembers.size() + " have been online " + sinceStr;
         Collection<Map.Entry<String, String>> kdInfo = CommandHelper.getKDInfo(historyStats, i -> i.getDay(1));
