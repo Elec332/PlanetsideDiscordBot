@@ -3,14 +3,16 @@ package nl.elec332.bot.discord.ps2outfits.core;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import nl.elec332.bot.discord.ps2outfits.api.IBotConfigurator;
 import nl.elec332.bot.discord.ps2outfits.api.IBotModule;
 import nl.elec332.bot.discord.ps2outfits.api.ICommand;
 import nl.elec332.bot.discord.ps2outfits.api.IConfigurableBotModule;
-import nl.elec332.bot.discord.ps2outfits.api.IBotConfigurator;
 
 import javax.security.auth.login.LoginException;
 import java.io.*;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -64,10 +66,13 @@ public class Main {
                         Runnable save = () -> {
                             try {
                                 synchronized (m) {
+                                    File back = new File(f.getAbsolutePath() + ".back");
+                                    Files.move(f.toPath(), back.toPath(), StandardCopyOption.REPLACE_EXISTING);
                                     ObjectOutputStream oos = new ObjectOutputStream(new GZIPOutputStream(new FileOutputStream(f)));
                                     oos.writeInt(m.getFileVersion());
                                     m.serialize(oos);
                                     oos.close();
+                                    back.delete();
                                 }
                             } catch (Exception e) {
                                 throw new RuntimeException("Failed save settings from module: " + m.getModuleName(), e);
@@ -100,7 +105,7 @@ public class Main {
         return ret;
     }
 
-    private static Function<String, String> loadProperties(Collection<String> extraProps) throws IOException{
+    private static Function<String, String> loadProperties(Collection<String> extraProps) throws IOException {
         File f = getFile("bot.properties");
         System.out.println("Reading properties file: " + f);
         Properties appProps = new Properties();

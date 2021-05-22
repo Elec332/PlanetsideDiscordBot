@@ -2,8 +2,8 @@ package nl.elec332.bot.discord.ps2outfits.modules.outfit.commands;
 
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
-import nl.elec332.bot.discord.ps2outfits.modules.CommandHelper;
 import nl.elec332.bot.discord.ps2outfits.api.util.SimpleCommand;
+import nl.elec332.bot.discord.ps2outfits.modules.CommandHelper;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
 
 import java.util.Calendar;

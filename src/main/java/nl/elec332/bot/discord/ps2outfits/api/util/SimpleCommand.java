@@ -2,7 +2,10 @@ package nl.elec332.bot.discord.ps2outfits.api.util;
 
 import nl.elec332.bot.discord.ps2outfits.api.ICommand;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
