@@ -5,10 +5,16 @@ import net.dv8tion.jda.api.entities.TextChannel;
 import nl.elec332.bot.discord.ps2outfits.api.ICommand;
 import nl.elec332.bot.discord.ps2outfits.api.util.AbstractSimpleConfigurableBotModule;
 import nl.elec332.bot.discord.ps2outfits.core.Main;
+import nl.elec332.bot.discord.ps2outfits.modules.PS2BotConfigurator;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.commands.*;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created by Elec332 on 22/05/2021
@@ -17,6 +23,28 @@ public class OutfitModule extends AbstractSimpleConfigurableBotModule<OutfitConf
 
     public OutfitModule() {
         super("outfit");
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void initialize() {
+        File sm = Main.getFile("servermapping.pbm");
+        if (sm.exists()) {
+            try {
+                GZIPInputStream gis = new GZIPInputStream(new FileInputStream(sm));
+                Map<String, String> m = (Map<String, String>) new ObjectInputStream(gis).readObject();
+                gis.close();
+                m.forEach((s, o) -> getConfigFor(Long.parseUnsignedLong(s)).setOutfit(PS2BotConfigurator.API.getOutfitManager().get(Long.parseLong(o))));
+                saveSettingsFile();
+                if (sm.delete()) {
+                    System.out.println("Successfully ported legacy settings!");
+                } else {
+                    throw new IOException();
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to load legacy settings.", e);
+            }
+        }
     }
 
     @Override
