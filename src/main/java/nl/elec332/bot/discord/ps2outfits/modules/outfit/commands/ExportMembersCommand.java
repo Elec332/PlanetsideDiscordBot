@@ -1,6 +1,7 @@
 package nl.elec332.bot.discord.ps2outfits.modules.outfit.commands;
 
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.utils.concurrent.Task;
 import nl.elec332.bot.discord.ps2outfits.api.util.SimpleCommand;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Created by Elec332 on 22/05/2021
@@ -42,9 +44,11 @@ public class ExportMembersCommand extends SimpleCommand<OutfitConfig> {
         XSSFSheet sheet = workbook.createSheet("Members");
         int col = 0;
         int name = col++;
-        int discord = col++;
         int lastOnline = col++;
         int rank = col++;
+        col++;
+        int discord = col++;
+        int dcRanks = col++;
         Row main = sheet.createRow(0);
         main.createCell(name).setCellValue("Name:");
         main.createCell(discord).setCellValue("Discord Name:");
@@ -52,10 +56,13 @@ public class ExportMembersCommand extends SimpleCommand<OutfitConfig> {
         main.createCell(rank).setCellValue("Current Rank:");
         XSSFCellStyle orange = workbook.createCellStyle();
         XSSFCellStyle red = workbook.createCellStyle();
+        XSSFCellStyle green = workbook.createCellStyle();
         red.setFillForegroundColor(new XSSFColor(Color.RED, null));
         red.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         orange.setFillForegroundColor(new XSSFColor(Color.ORANGE, null));
         orange.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        green.setFillForegroundColor(new XSSFColor(Color.GREEN, null));
+        green.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         Instant lastMonth = Instant.now().minus(30, ChronoUnit.DAYS);
         Instant twoMonths = Instant.now().minus(60, ChronoUnit.DAYS);
 
@@ -72,29 +79,27 @@ public class ExportMembersCommand extends SimpleCommand<OutfitConfig> {
                         row.createCell(name).setCellValue(m.getPlayerName());
                         String pnLower = m.getPlayerName().toLowerCase(Locale.ROOT);
                         String pnLowerSub = pnLower.length() > 9 ? pnLower.substring(2, pnLower.length() - 2) : null;
-                        String dcName = members.stream()
-                                .map(Member::getEffectiveName)
-                                .filter(m2 -> pnLower.equalsIgnoreCase(m2) || m2.equalsIgnoreCase(pnLower))
+                        Member dcMember = members.stream()
+                                .filter(m2 -> pnLower.equalsIgnoreCase(m2.getEffectiveName()) || m2.getEffectiveName().equalsIgnoreCase(pnLower))
                                 .findFirst()
                                 .orElse(members.stream()
-                                        .map(Member::getEffectiveName)
-                                        .filter(s -> s.length() >= 6)
                                         .filter(m2 -> {
-                                            String nl = m2.toLowerCase(Locale.ROOT);
-                                            return pnLower.contains(nl) || nl.contains(pnLower);
+                                            String nl = m2.getEffectiveName().toLowerCase(Locale.ROOT);
+                                            return nl.length() >= 6 && (pnLower.contains(nl) || nl.contains(pnLower));
                                         })
                                         .findFirst()
-                                        .orElse(pnLowerSub == null ? "-" : members.stream()
-                                                .map(Member::getEffectiveName)
+                                        .orElse(pnLowerSub == null ? null : members.stream()
                                                 .filter(m2 -> {
-                                                    String nl = m2.toLowerCase(Locale.ROOT);
+                                                    String nl = m2.getEffectiveName().toLowerCase(Locale.ROOT);
                                                     return pnLowerSub.contains(nl) || nl.contains(pnLowerSub);
                                                 })
                                                 .findFirst()
-                                                .orElse("-")
+                                                .orElse(null)
                                         )
                                 );
-                        row.createCell(discord).setCellValue(dcName);
+                        List<String> roles = dcMember == null ? Collections.emptyList() : dcMember.getRoles().stream().map(Role::getName).map(s -> s.replace("-", " ")).collect(Collectors.toList());
+                        row.createCell(discord).setCellValue(dcMember == null ? "-" : dcMember.getEffectiveName());
+                        row.createCell(dcRanks).setCellValue(String.join(",", roles));
                         Cell cell = row.createCell(lastOnline);
                         Instant active = m.getLastPlayerActivity();
                         cell.setCellValue(active.toString());
@@ -104,6 +109,10 @@ public class ExportMembersCommand extends SimpleCommand<OutfitConfig> {
                             cell.setCellStyle(orange);
                         }
                         row.createCell(rank).setCellValue(m.getRankName());
+                        if (roles.contains(m.getRankName().replace("-", " "))) {
+                            row.getCell(rank).setCellStyle(green);
+                            row.getCell(discord).setCellStyle(green);
+                        }
                     });
             for (int i = 0; i < col2 + 1; i++) {
                 sheet.autoSizeColumn(i);

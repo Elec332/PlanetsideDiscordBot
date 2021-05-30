@@ -24,7 +24,10 @@ public class OnlineMembersCommand extends SimpleCommand<OutfitConfig> {
         IOutfit outfit = config.getOutfit();
         EmbedBuilder builder = new EmbedBuilder()
                 .setTitle(outfit.getName() + " online members")
-                .setDescription(outfit.getOnlineMembers().map(IOutfitMember::getPlayerName).collect(Collectors.joining("\n")));
+                .setDescription(outfit.getOnlineMembers()
+                        .map(IOutfitMember::getPlayerName)
+                        .sorted()
+                        .collect(Collectors.joining("\n")));
         channel.sendMessage(builder.build()).submit();
         return true;
     }

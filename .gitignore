@@ -28,3 +28,5 @@ eclipse
 run
 
 setup.bat
+bot.properties
+*.dmc

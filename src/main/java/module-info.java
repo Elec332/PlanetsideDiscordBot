@@ -11,13 +11,12 @@ import nl.elec332.planetside2.api.IPS2APIAccessor;
 module nl.elec332.bot.discord.ps2outfits {
 
     requires net.dv8tion.jda;
-    requires com.google.gson;
     requires com.fasterxml.jackson.core;
+    requires transitive java.desktop;
 
     requires nl.elec332.planetside2api;
     requires org.apache.poi.ooxml;
     requires org.apache.poi.poi;
-    requires java.desktop;
 
     uses IPS2APIAccessor;
     uses IBotModule;
@@ -25,5 +24,7 @@ module nl.elec332.bot.discord.ps2outfits {
 
     provides IBotModule with OutfitModule, NormalModule;
     provides IBotConfigurator with PS2BotConfigurator;
+
+    opens nl.elec332.bot.discord.ps2outfits.modules.outfit to com.google.gson;
 
 }

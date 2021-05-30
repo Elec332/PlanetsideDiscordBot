@@ -60,19 +60,23 @@ public class Main {
                                     ois.close();
                                 }
                             } catch (Exception e) {
-                                throw new RuntimeException("Failed to load settings from module: " + m.getModuleName());
+                                throw new RuntimeException("Failed to load settings from module: " + m.getModuleName(), e);
                             }
                         }
                         Runnable save = () -> {
                             try {
                                 synchronized (m) {
                                     File back = new File(f.getAbsolutePath() + ".back");
-                                    Files.move(f.toPath(), back.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                    if (f.exists()) {
+                                        Files.move(f.toPath(), back.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                    }
                                     ObjectOutputStream oos = new ObjectOutputStream(new GZIPOutputStream(new FileOutputStream(f)));
                                     oos.writeInt(m.getFileVersion());
                                     m.serialize(oos);
                                     oos.close();
-                                    back.delete();
+                                    if (back.exists() && !back.delete()) {
+                                        throw new IOException();
+                                    }
                                 }
                             } catch (Exception e) {
                                 throw new RuntimeException("Failed save settings from module: " + m.getModuleName(), e);
@@ -91,6 +95,7 @@ public class Main {
             JDA jda = JDABuilder.createDefault(TOKEN).enableIntents(GatewayIntent.GUILD_MEMBERS).build();
             jda.awaitReady();
             jda.addEventListener(new ChatHandler(Collections.unmodifiableMap(modules), props));
+            modules.keySet().forEach(m -> m.onBotConnected(jda));
             System.out.println("Finished Building JDA!");
         } catch (LoginException | InterruptedException e) {
             e.printStackTrace();
@@ -101,6 +106,9 @@ public class Main {
         File ret = new File(EXEC, name);
         if (!ret.exists()) {
             ret = new File(ROOT, name);
+            if (!ret.exists()) {
+                return new File(EXEC, name);
+            }
         }
         return ret;
     }
@@ -114,11 +122,21 @@ public class Main {
             for (String s : extraProps) {
                 appProps.put(s, "");
             }
-            appProps.store(new FileOutputStream(f), "Discord Outfit bot settings");
+            appProps.store(new FileOutputStream(f), "Discord bot settings");
             appProps = new Properties();
         }
         appProps.load(new FileInputStream(f));
         TOKEN = appProps.getProperty(TOKEN_PROP);
+        boolean tag = false;
+        for (String s : extraProps) {
+            if (!appProps.containsKey(s)) {
+                appProps.put(s, "");
+                tag = true;
+            }
+        }
+        if (tag) {
+            appProps.store(new FileOutputStream(f), "Discord bot settings");
+        }
         appProps.remove(TOKEN_PROP);
         Properties finalAppProps = appProps;
         return finalAppProps::getProperty;

@@ -1,12 +1,15 @@
 package nl.elec332.bot.discord.ps2outfits.modules.outfit;
 
+import com.google.gson.Gson;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.TextChannel;
 import nl.elec332.bot.discord.ps2outfits.api.ICommand;
-import nl.elec332.bot.discord.ps2outfits.api.util.AbstractSimpleConfigurableBotModule;
 import nl.elec332.bot.discord.ps2outfits.core.Main;
+import nl.elec332.bot.discord.ps2outfits.modules.AbstractGSONModule;
 import nl.elec332.bot.discord.ps2outfits.modules.PS2BotConfigurator;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.commands.*;
+import nl.elec332.planetside2.util.NetworkUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,7 +22,7 @@ import java.util.zip.GZIPInputStream;
 /**
  * Created by Elec332 on 22/05/2021
  */
-public class OutfitModule extends AbstractSimpleConfigurableBotModule<OutfitConfig> {
+public class OutfitModule extends AbstractGSONModule<OutfitConfig> {
 
     public OutfitModule() {
         super("outfit");
@@ -48,6 +51,10 @@ public class OutfitModule extends AbstractSimpleConfigurableBotModule<OutfitConf
     }
 
     @Override
+    public void onBotConnected(JDA jda) {
+    }
+
+    @Override
     public boolean canRunCommand(TextChannel channel, Member member, OutfitConfig config, ICommand<OutfitConfig> command) {
         if (config.getOutfit() != null || command instanceof SetOutfitCommand) {
             return true;
@@ -57,8 +64,13 @@ public class OutfitModule extends AbstractSimpleConfigurableBotModule<OutfitConf
     }
 
     @Override
-    protected OutfitConfig createConfig(long sid) {
-        return new OutfitConfig();
+    protected Gson createGson() {
+        return NetworkUtil.GSON;
+    }
+
+    @Override
+    protected Class<OutfitConfig> getConfigType() {
+        return OutfitConfig.class;
     }
 
     @Override

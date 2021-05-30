@@ -1,13 +1,17 @@
 plugins {
     id "application"
-    //id "com.github.johnrengelman.shadow" version "6.1.0"
+    id "de.jjohannes.extra-java-module-info" version "0.6"
 }
 
 group 'nl.elec332.bot.discord.ps2outfits'
 version '1.0-SNAPSHOT'
-mainClassName = group + ".core.Main"
 
 sourceCompatibility = targetCompatibility = 11
+
+application {
+    mainClassName = group + ".core.Main"
+    mainModule = group
+}
 
 repositories {
     mavenCentral()
@@ -17,11 +21,12 @@ repositories {
 }
 
 dependencies {
+
     implementation ('net.dv8tion:JDA:4.2.1_262') {
         exclude module: 'opus-java'
     }
-    implementation "com.google.code.gson:gson:2.8.6"
     implementation "com.fasterxml.jackson.core:jackson-core:2.12.3"
+    implementation "com.google.code.gson:gson:2.8.6"
     //implementation "nl.elec332.planetside2:PlanetSide2API:1.0-SNAPSHOT"
     implementation project(":planetside2api")
 
@@ -37,9 +42,10 @@ dependencies {
 
 }
 
-//tasks.jar.enabled = false
-//tasks.build.dependsOn(shadowJar)
-//
-//shadowJar {
-//    minimize()
-//}
+extraJavaModuleInfo {
+    failOnMissingModuleInfo = false
+    automaticModule("SparseBitSet-1.2.jar", "SparseBitSet")
+    automaticModule("batik-all-1.13.jar", "batik.all")
+    automaticModule("xmlgraphics-commons-2.4.jar", "xmlgraphics.commons")
+    automaticModule("commons-math3-3.6.1.jar", "commons.math3")
+}
