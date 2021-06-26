@@ -2,11 +2,11 @@ package nl.elec332.bot.discord.ps2outfits.modules.outfit.commands;
 
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
-import nl.elec332.bot.discord.ps2outfits.api.util.SimpleCommand;
-import nl.elec332.bot.discord.ps2outfits.modules.PS2BotConfigurator;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import nl.elec332.bot.discord.ps2outfits.PS2BotConfigurator;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
-import nl.elec332.planetside2.api.objects.player.IOutfit;
+import nl.elec332.discord.bot.core.api.util.SimpleCommand;
+import nl.elec332.planetside2.ps2api.api.objects.player.IOutfit;
 
 /**
  * Created by Elec332 on 22/05/2021
@@ -22,7 +22,7 @@ public class SetOutfitCommand extends SimpleCommand<OutfitConfig> {
     private static final String BANNED = "<>[]";
 
     @Override
-    public boolean executeCommand(TextChannel channel, Member member, OutfitConfig config, String... arg) {
+    public boolean executeCommand(MessageChannel channel, Member member, OutfitConfig config, String... arg) {
         String args = arg[0];
         if (member.hasPermission(Permission.ADMINISTRATOR)) {
             for (char c : BANNED.toCharArray()) {

@@ -1,3 +1,1 @@
 rootProject.name = 'DCBotRBRN'
-include ":planetside2api"
-project(":planetside2api").projectDir = file("../PlanetSide2API")

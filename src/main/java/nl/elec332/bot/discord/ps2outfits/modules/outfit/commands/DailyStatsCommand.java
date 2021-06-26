@@ -2,15 +2,16 @@ package nl.elec332.bot.discord.ps2outfits.modules.outfit.commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
-import nl.elec332.bot.discord.ps2outfits.api.util.SimpleCommand;
-import nl.elec332.bot.discord.ps2outfits.modules.CommandHelper;
-import nl.elec332.bot.discord.ps2outfits.modules.PS2BotConfigurator;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import nl.elec332.bot.discord.ps2outfits.CommandHelper;
+import nl.elec332.bot.discord.ps2outfits.PS2BotConfigurator;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
-import nl.elec332.planetside2.api.objects.player.IOutfit;
-import nl.elec332.planetside2.api.objects.player.IPlayerResponseList;
-import nl.elec332.planetside2.api.objects.player.request.ICharacterStat;
-import nl.elec332.planetside2.api.objects.player.request.ICharacterStatHistory;
+import nl.elec332.discord.bot.core.api.util.SimpleCommand;
+import nl.elec332.planetside2.ps2api.api.objects.player.IOutfit;
+import nl.elec332.planetside2.ps2api.api.objects.player.IPlayerRequestList;
+import nl.elec332.planetside2.ps2api.api.objects.player.IPlayerResponseList;
+import nl.elec332.planetside2.ps2api.api.objects.player.request.ICharacterStat;
+import nl.elec332.planetside2.ps2api.api.objects.player.request.ICharacterStatHistory;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -29,7 +30,7 @@ public class DailyStatsCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(TextChannel channel, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Member member, OutfitConfig config, String... args) {
         IOutfit outfit = config.getOutfit();
         Collection<Long> onlineMembers = outfit.getPlayerIds(p -> p.getLastPlayerActivity().isAfter(Instant.now().minus(1, ChronoUnit.DAYS)));
         if (onlineMembers.isEmpty()) {
@@ -39,8 +40,8 @@ public class DailyStatsCommand extends SimpleCommand<OutfitConfig> {
         String title = outfit.getName() + " daily stats";
         String description = "Out of " + outfit.getMembers() + " members, " + onlineMembers.size() + " have been online today";
 
-        IPlayerResponseList<ICharacterStatHistory> historyStats = PS2BotConfigurator.API.getPlayerRequestHandler().getSlimCharacterStatHistory(onlineMembers, "facility_capture", "deaths", "kills");
-        IPlayerResponseList<ICharacterStat> stats = PS2BotConfigurator.API.getPlayerRequestHandler().getSlimCharacterStats(onlineMembers, "assist_count");
+        IPlayerResponseList<IPlayerRequestList<ICharacterStatHistory>> historyStats = PS2BotConfigurator.API.getPlayerRequestHandler().getSlimCharacterStatHistory(onlineMembers, "facility_capture", "deaths", "kills");
+        IPlayerResponseList<IPlayerRequestList<ICharacterStat>> stats = PS2BotConfigurator.API.getPlayerRequestHandler().getSlimCharacterStats(onlineMembers, "assist_count");
 
         Collection<Map.Entry<String, String>> kdInfo = CommandHelper.getKDInfo(historyStats, i -> i.getDay(1));
         if (kdInfo.size() != onlineMembers.size()) {

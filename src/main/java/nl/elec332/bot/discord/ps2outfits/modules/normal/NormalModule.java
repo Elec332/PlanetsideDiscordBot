@@ -1,11 +1,11 @@
 package nl.elec332.bot.discord.ps2outfits.modules.normal;
 
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
-import nl.elec332.bot.discord.ps2outfits.api.IBotModule;
-import nl.elec332.bot.discord.ps2outfits.api.ICommand;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import nl.elec332.bot.discord.ps2outfits.modules.normal.commands.NoseGunKillsCommand;
 import nl.elec332.bot.discord.ps2outfits.modules.normal.commands.ServerStatusCommand;
+import nl.elec332.discord.bot.core.api.IBotModule;
+import nl.elec332.discord.bot.core.api.ICommand;
 
 import java.util.function.Consumer;
 
@@ -26,12 +26,12 @@ public class NormalModule implements IBotModule<NormalModule> {
     }
 
     @Override
-    public boolean canRunCommand(TextChannel channel, Member member, NormalModule config, ICommand<NormalModule> command) {
+    public boolean canRunCommand(MessageChannel channel, Member member, NormalModule config, ICommand<NormalModule> command) {
         return true;
     }
 
     @Override
-    public NormalModule getConfigFor(long serverId) {
+    public NormalModule getInstanceFor(long serverId) {
         return this;
     }
 

@@ -1,15 +1,14 @@
 package nl.elec332.bot.discord.ps2outfits.modules.outfit;
 
 import com.google.gson.Gson;
-import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
-import nl.elec332.bot.discord.ps2outfits.api.ICommand;
-import nl.elec332.bot.discord.ps2outfits.core.Main;
-import nl.elec332.bot.discord.ps2outfits.modules.AbstractGSONModule;
-import nl.elec332.bot.discord.ps2outfits.modules.PS2BotConfigurator;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import nl.elec332.bot.discord.ps2outfits.PS2BotConfigurator;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.commands.*;
-import nl.elec332.planetside2.util.NetworkUtil;
+import nl.elec332.discord.bot.core.api.ICommand;
+import nl.elec332.discord.bot.core.util.AbstractGSONModule;
+import nl.elec332.discord.bot.core.util.BotHelper;
+import nl.elec332.planetside2.ps2api.util.NetworkUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,13 +30,13 @@ public class OutfitModule extends AbstractGSONModule<OutfitConfig> {
     @Override
     @SuppressWarnings("unchecked")
     protected void initialize() {
-        File sm = Main.getFile("servermapping.pbm");
+        File sm = BotHelper.getFile("servermapping.pbm");
         if (sm.exists()) {
             try {
                 GZIPInputStream gis = new GZIPInputStream(new FileInputStream(sm));
                 Map<String, String> m = (Map<String, String>) new ObjectInputStream(gis).readObject();
                 gis.close();
-                m.forEach((s, o) -> getConfigFor(Long.parseUnsignedLong(s)).setOutfit(PS2BotConfigurator.API.getOutfitManager().get(Long.parseLong(o))));
+                m.forEach((s, o) -> getInstanceFor(Long.parseUnsignedLong(s)).setOutfit(PS2BotConfigurator.API.getOutfitManager().get(Long.parseLong(o))));
                 saveSettingsFile();
                 if (sm.delete()) {
                     System.out.println("Successfully ported legacy settings!");
@@ -51,11 +50,7 @@ public class OutfitModule extends AbstractGSONModule<OutfitConfig> {
     }
 
     @Override
-    public void onBotConnected(JDA jda) {
-    }
-
-    @Override
-    public boolean canRunCommand(TextChannel channel, Member member, OutfitConfig config, ICommand<OutfitConfig> command) {
+    public boolean canRunCommand(MessageChannel channel, Member member, OutfitConfig config, ICommand<OutfitConfig> command) {
         if (config.getOutfit() != null || command instanceof SetOutfitCommand) {
             return true;
         }
@@ -82,6 +77,7 @@ public class OutfitModule extends AbstractGSONModule<OutfitConfig> {
         registry.accept(new DailyStatsCommand());
         registry.accept(new ExportMembersCommand());
         registry.accept(new OnlineMembersCommand());
+        registry.accept(new TrackAlertsCommand(this::saveSettingsFile));
     }
 
 }

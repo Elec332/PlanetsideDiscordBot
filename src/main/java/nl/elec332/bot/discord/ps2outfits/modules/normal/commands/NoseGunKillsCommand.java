@@ -2,15 +2,15 @@ package nl.elec332.bot.discord.ps2outfits.modules.normal.commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
-import nl.elec332.bot.discord.ps2outfits.api.util.SimpleCommand;
-import nl.elec332.bot.discord.ps2outfits.modules.CommandHelper;
-import nl.elec332.bot.discord.ps2outfits.modules.PS2BotConfigurator;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import nl.elec332.bot.discord.ps2outfits.CommandHelper;
+import nl.elec332.bot.discord.ps2outfits.PS2BotConfigurator;
 import nl.elec332.bot.discord.ps2outfits.modules.normal.NormalModule;
-import nl.elec332.planetside2.api.objects.player.IPlayer;
-import nl.elec332.planetside2.api.objects.player.IPlayerRequest;
-import nl.elec332.planetside2.api.objects.player.request.IFactionWeaponStat;
-import nl.elec332.planetside2.util.PS2ItemSets;
+import nl.elec332.discord.bot.core.api.util.SimpleCommand;
+import nl.elec332.planetside2.ps2api.api.objects.player.IPlayer;
+import nl.elec332.planetside2.ps2api.api.objects.player.IPlayerRequestList;
+import nl.elec332.planetside2.ps2api.api.objects.player.request.IFactionWeaponStat;
+import nl.elec332.planetside2.ps2api.util.PS2ItemSets;
 
 import java.util.Collections;
 
@@ -24,13 +24,13 @@ public class NoseGunKillsCommand extends SimpleCommand<NormalModule> {
     }
 
     @Override
-    public boolean executeCommand(TextChannel channel, Member member, NormalModule config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Member member, NormalModule config, String... args) {
         IPlayer player = CommandHelper.getPlayer(member, args.length == 0 ? null : args[0]);
         if (player == null) {
             channel.sendMessage("Failed to find player").submit();
             return true;
         }
-        IPlayerRequest<IFactionWeaponStat> stats = PS2BotConfigurator.API.getPlayerRequestHandler().getSlimCharacterWeaponStats(Collections.singleton(player.getId()), PS2ItemSets.ALL_AA_NOSE_GUNS.without(PS2ItemSets.AI_NOSE_GUNS)).getAsList().get(0);
+        IPlayerRequestList<IFactionWeaponStat> stats = PS2BotConfigurator.API.getPlayerRequestHandler().getSlimCharacterWeaponStats(Collections.singleton(player.getId()), PS2ItemSets.ALL_AA_NOSE_GUNS.without(PS2ItemSets.AI_NOSE_GUNS)).getAsList().get(0);
         if (stats == null) {
             throw new RuntimeException("Null stats");
         }

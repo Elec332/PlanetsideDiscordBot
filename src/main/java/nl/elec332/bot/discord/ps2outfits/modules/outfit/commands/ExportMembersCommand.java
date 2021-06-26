@@ -1,13 +1,14 @@
 package nl.elec332.bot.discord.ps2outfits.modules.outfit.commands;
 
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.utils.concurrent.Task;
-import nl.elec332.bot.discord.ps2outfits.api.util.SimpleCommand;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
-import nl.elec332.planetside2.api.objects.player.IOutfit;
-import nl.elec332.planetside2.api.objects.player.IOutfitMember;
+import nl.elec332.discord.bot.core.api.util.SimpleCommand;
+import nl.elec332.planetside2.ps2api.api.objects.player.IOutfit;
+import nl.elec332.planetside2.ps2api.api.objects.player.IOutfitMember;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Row;
@@ -38,7 +39,7 @@ public class ExportMembersCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(TextChannel channel, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Member member, OutfitConfig config, String... args) {
         IOutfit outfit = config.getOutfit();
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Members");
@@ -67,7 +68,7 @@ public class ExportMembersCommand extends SimpleCommand<OutfitConfig> {
         Instant twoMonths = Instant.now().minus(60, ChronoUnit.DAYS);
 
         AtomicInteger counter = new AtomicInteger(2);
-        Task<List<Member>> mt = channel.getGuild().loadMembers();
+        Task<List<Member>> mt = ((TextChannel) channel).getGuild().loadMembers();
         int col2 = col;
 
         mt.onSuccess(members -> {

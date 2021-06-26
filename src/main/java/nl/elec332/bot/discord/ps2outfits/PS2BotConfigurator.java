@@ -1,8 +1,8 @@
-package nl.elec332.bot.discord.ps2outfits.modules;
+package nl.elec332.bot.discord.ps2outfits;
 
-import nl.elec332.bot.discord.ps2outfits.api.IBotConfigurator;
-import nl.elec332.planetside2.api.IPS2APIAccessor;
-import nl.elec332.planetside2.api.objects.IPS2API;
+import nl.elec332.discord.bot.core.api.IBotConfigurator;
+import nl.elec332.planetside2.ps2api.api.IPS2APIAccessor;
+import nl.elec332.planetside2.ps2api.api.objects.IPS2API;
 
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
@@ -16,6 +16,7 @@ public class PS2BotConfigurator implements IBotConfigurator {
     private static final String PS2_SID_PROP = "ps2ServiceID";
 
     public static IPS2API API = null;
+    public static IPS2APIAccessor API_ACCESSOR = null;
 
     @Override
     public void addProperties(Consumer<String> registry) {
@@ -27,6 +28,7 @@ public class PS2BotConfigurator implements IBotConfigurator {
         IPS2APIAccessor accessor = ServiceLoader.load(IPS2APIAccessor.class).findFirst().get();
         accessor.setServiceId(propertyGetter.apply(PS2_SID_PROP));
         API = accessor.getAPI();
+        API_ACCESSOR = accessor;
     }
 
     @Override

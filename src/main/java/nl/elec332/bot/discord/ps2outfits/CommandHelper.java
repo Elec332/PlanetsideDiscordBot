@@ -1,15 +1,16 @@
-package nl.elec332.bot.discord.ps2outfits.modules;
+package nl.elec332.bot.discord.ps2outfits;
 
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
-import nl.elec332.planetside2.api.objects.player.IOutfit;
-import nl.elec332.planetside2.api.objects.player.IPlayer;
-import nl.elec332.planetside2.api.objects.player.IPlayerResponseList;
-import nl.elec332.planetside2.api.objects.player.request.ICharacterStatHistory;
-import nl.elec332.planetside2.api.objects.world.IServer;
-import nl.elec332.planetside2.util.NetworkUtil;
+import net.dv8tion.jda.api.entities.MessageChannel;
+import nl.elec332.planetside2.ps2api.api.objects.player.IOutfit;
+import nl.elec332.planetside2.ps2api.api.objects.player.IPlayer;
+import nl.elec332.planetside2.ps2api.api.objects.player.IPlayerRequestList;
+import nl.elec332.planetside2.ps2api.api.objects.player.IPlayerResponseList;
+import nl.elec332.planetside2.ps2api.api.objects.player.request.ICharacterStatHistory;
+import nl.elec332.planetside2.ps2api.api.objects.world.IServer;
+import nl.elec332.planetside2.ps2api.util.NetworkUtil;
 
 import java.text.DecimalFormat;
 import java.time.Instant;
@@ -60,7 +61,7 @@ public class CommandHelper {
         return PS2BotConfigurator.API.getPlayerManager().getByName(name);
     }
 
-    public static void postServerData(TextChannel channel, IServer server) {
+    public static void postServerData(MessageChannel channel, IServer server) {
         JsonObject o = NetworkUtil.readJsonFromURL("https://ps2.fisu.pw/api/population/?world=" + server.getId(), false);
         o = o.getAsJsonArray("result").get(0).getAsJsonObject();
         EmbedBuilder builder = new EmbedBuilder()
@@ -73,7 +74,7 @@ public class CommandHelper {
         channel.sendMessage(builder.build()).submit();
     }
 
-    public static Collection<Map.Entry<String, String>> getKDInfo(IPlayerResponseList<ICharacterStatHistory> historyStats, ToIntFunction<ICharacterStatHistory> getter) {
+    public static Collection<Map.Entry<String, String>> getKDInfo(IPlayerResponseList<IPlayerRequestList<ICharacterStatHistory>> historyStats, ToIntFunction<ICharacterStatHistory> getter) {
         return historyStats.streamMappedResponse(p -> {
             ICharacterStatHistory kills = p.getFirstResponseByName("kills");
             ICharacterStatHistory deaths = p.getFirstResponseByName("deaths");
@@ -96,13 +97,13 @@ public class CommandHelper {
                 .collect(Collectors.toList());
     }
 
-    public static void postKDInfo(TextChannel channel, IOutfit outfit, String sinceStr, Instant since, ToIntFunction<ICharacterStatHistory> getter) {
+    public static void postKDInfo(MessageChannel channel, IOutfit outfit, String sinceStr, Instant since, ToIntFunction<ICharacterStatHistory> getter) {
         Collection<Long> onlineMembers = outfit.getPlayerIds(p -> p.getLastPlayerActivity().isAfter(since));
         if (onlineMembers.isEmpty()) {
             channel.sendMessage("No members have been online!").submit();
             return;
         }
-        IPlayerResponseList<ICharacterStatHistory> historyStats = PS2BotConfigurator.API.getPlayerRequestHandler().getSlimCharacterStatHistory(onlineMembers, "deaths", "kills");
+        IPlayerResponseList<IPlayerRequestList<ICharacterStatHistory>> historyStats = PS2BotConfigurator.API.getPlayerRequestHandler().getSlimCharacterStatHistory(onlineMembers, "deaths", "kills");
         String title = outfit.getName() + " KD info";
         String description = "Out of " + outfit.getMembers() + " members, " + onlineMembers.size() + " have been online " + sinceStr;
         Collection<Map.Entry<String, String>> kdInfo = CommandHelper.getKDInfo(historyStats, i -> i.getDay(1));
@@ -112,7 +113,7 @@ public class CommandHelper {
         postPlayerData(channel, title, description, kdInfo);
     }
 
-    public static void postPlayerData(TextChannel channel, String title_, String description, Collection<Map.Entry<String, String>> fields) {
+    public static void postPlayerData(MessageChannel channel, String title_, String description, Collection<Map.Entry<String, String>> fields) {
         try {
             EmbedBuilder builder = new EmbedBuilder()
                     .setTitle(title_)
