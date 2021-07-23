@@ -132,6 +132,10 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
                     .filter(Objects::nonNull)
                     .forEach(channel -> channel.sendMessage(builder.build()).submit());
         });
+        this.streamingService.setExceptionHandler(t -> facilityEventChannels.stream()
+                .map(jda::getTextChannelById)
+                .filter(Objects::nonNull)
+                .forEach(channel -> channel.sendMessage("Received garbage from streaming API, causing " + t.getMessage()).submit()));
     }
 
     private void setupStreaming() {

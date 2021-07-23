@@ -64,7 +64,7 @@ public class OutfitModule extends AbstractGSONModule<OutfitConfig> {
     }
 
     @Override
-    protected Class<OutfitConfig> getConfigType() {
+    protected Class<OutfitConfig> getInstanceType() {
         return OutfitConfig.class;
     }
 

@@ -4,6 +4,7 @@ import nl.elec332.discord.bot.core.api.IBotConfigurator;
 import nl.elec332.planetside2.ps2api.api.IPS2APIAccessor;
 import nl.elec332.planetside2.ps2api.api.objects.IPS2API;
 
+import java.util.List;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -24,11 +25,14 @@ public class PS2BotConfigurator implements IBotConfigurator {
     }
 
     @Override
-    public void handleProperties(Function<String, String> propertyGetter) {
+    public void handleProperties(Function<String, String> propertyGetter, List<String> args) {
         IPS2APIAccessor accessor = ServiceLoader.load(IPS2APIAccessor.class).findFirst().get();
         accessor.setServiceId(propertyGetter.apply(PS2_SID_PROP));
-        API = accessor.getAPI();
         API_ACCESSOR = accessor;
+        if (args.contains("-noSSL")) {
+            API_ACCESSOR.getCensusAPI().disableSSL();
+        }
+        API = accessor.getAPI();
     }
 
     @Override
