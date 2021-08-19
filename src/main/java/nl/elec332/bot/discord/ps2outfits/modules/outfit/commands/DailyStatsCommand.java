@@ -2,6 +2,7 @@ package nl.elec332.bot.discord.ps2outfits.modules.outfit.commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import nl.elec332.bot.discord.ps2outfits.CommandHelper;
 import nl.elec332.bot.discord.ps2outfits.PS2BotConfigurator;
@@ -30,7 +31,7 @@ public class DailyStatsCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
         IOutfit outfit = config.getOutfit();
         Collection<Long> onlineMembers = outfit.getPlayerIds(p -> p.getLastPlayerActivity().isAfter(Instant.now().minus(1, ChronoUnit.DAYS)));
         if (onlineMembers.isEmpty()) {

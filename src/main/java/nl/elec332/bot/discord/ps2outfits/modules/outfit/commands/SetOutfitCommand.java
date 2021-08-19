@@ -2,6 +2,7 @@ package nl.elec332.bot.discord.ps2outfits.modules.outfit.commands;
 
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import nl.elec332.bot.discord.ps2outfits.PS2BotConfigurator;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
@@ -22,7 +23,7 @@ public class SetOutfitCommand extends SimpleCommand<OutfitConfig> {
     private static final String BANNED = "<>[]";
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Member member, OutfitConfig config, String... arg) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... arg) {
         String args = arg[0];
         if (member.hasPermission(Permission.ADMINISTRATOR)) {
             for (char c : BANNED.toCharArray()) {

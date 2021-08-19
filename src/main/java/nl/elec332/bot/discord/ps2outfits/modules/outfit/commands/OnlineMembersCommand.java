@@ -2,6 +2,7 @@ package nl.elec332.bot.discord.ps2outfits.modules.outfit.commands;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
 import nl.elec332.discord.bot.core.api.util.SimpleCommand;
@@ -20,7 +21,7 @@ public class OnlineMembersCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
         IOutfit outfit = config.getOutfit();
         EmbedBuilder builder = new EmbedBuilder()
                 .setTitle(outfit.getName() + " online members")

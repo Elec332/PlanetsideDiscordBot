@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
 import nl.elec332.planetside2.ps2api.api.objects.player.IOutfit;
 import nl.elec332.planetside2.ps2api.api.objects.player.IPlayer;
 import nl.elec332.planetside2.ps2api.api.objects.player.IPlayerRequestList;
@@ -41,24 +42,28 @@ public class CommandHelper {
         return Instant.ofEpochMilli(cal.getTimeInMillis());
     }
 
-    public static IPlayer getPlayer(Member member, String name) {
-        if (name != null && !name.isEmpty()) {
-            return PS2BotConfigurator.API.getPlayerManager().getByName(name);
-        }
-        if (member == null) {
-            return null;
-        }
-        name = member.getEffectiveName();
+    public static String trimPlayerName(String name) {
         String newName = name;
         do {
             name = newName;
             int i = name.indexOf("[");
             int j = name.indexOf("]");
             if (i >= 0 && j >= 0) {
-                newName = name.replace(name.substring(i, j + 1), "").strip();
+                newName = name.replace(name.substring(i, j + 1), "").trim();
             }
         } while (!name.equalsIgnoreCase(newName));
-        return PS2BotConfigurator.API.getPlayerManager().getByName(name);
+        return name;
+    }
+
+    public static IPlayer getPlayer(OutfitConfig config, Member member, String name) {
+        if (name != null && !name.isEmpty()) {
+            return PS2BotConfigurator.API.getPlayerManager().getByName(name);
+        }
+        if (member == null) {
+            return null;
+        }
+        return config.getPlayer(member);
+        //return PS2BotConfigurator.API.getPlayerManager().getByName(trimPlayerName(member.getEffectiveName()));
     }
 
     public static void postServerData(MessageChannel channel, IServer server) {
@@ -71,7 +76,7 @@ public class CommandHelper {
                 .addField("VS", "" + o.get("vs").getAsInt(), false)
                 .addField("NS", "" + o.get("ns").getAsInt(), false);
 
-        channel.sendMessage(builder.build()).submit();
+        channel.sendMessageEmbeds(builder.build()).submit();
     }
 
     public static Collection<Map.Entry<String, String>> getKDInfo(IPlayerResponseList<IPlayerRequestList<ICharacterStatHistory>> historyStats, ToIntFunction<ICharacterStatHistory> getter) {

@@ -78,6 +78,9 @@ public class OutfitModule extends AbstractGSONModule<OutfitConfig> {
         registry.accept(new ExportMembersCommand());
         registry.accept(new OnlineMembersCommand());
         registry.accept(new TrackAlertsCommand(this::saveSettingsFile));
+        registry.accept(new PlayerMappingCommand(this::saveSettingsFile));
+        registry.accept(new PlayerAltMappingCommand(this::saveSettingsFile));
+        registry.accept(new NoseGunKillsCommand());
     }
 
 }

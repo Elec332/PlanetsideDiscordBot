@@ -1,6 +1,7 @@
 package nl.elec332.bot.discord.ps2outfits.modules.outfit.commands;
 
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
 import nl.elec332.discord.bot.core.api.util.SimpleCommand;
@@ -20,7 +21,7 @@ public class TrackAlertsCommand extends SimpleCommand<OutfitConfig> {
     private final Runnable save;
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
         Set<Long> c = config.getFacilityEventChannels();
         if (c.contains(channel.getIdLong())) {
             c.remove(channel.getIdLong());

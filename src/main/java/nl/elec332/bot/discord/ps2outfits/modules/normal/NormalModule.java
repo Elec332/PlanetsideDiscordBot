@@ -2,7 +2,6 @@ package nl.elec332.bot.discord.ps2outfits.modules.normal;
 
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.MessageChannel;
-import nl.elec332.bot.discord.ps2outfits.modules.normal.commands.NoseGunKillsCommand;
 import nl.elec332.bot.discord.ps2outfits.modules.normal.commands.ServerStatusCommand;
 import nl.elec332.discord.bot.core.api.IBotModule;
 import nl.elec332.discord.bot.core.api.ICommand;
@@ -17,7 +16,6 @@ public class NormalModule implements IBotModule<NormalModule> {
     @Override
     public void registerCommands(Consumer<ICommand<NormalModule>> registry) {
         registry.accept(new ServerStatusCommand());
-        registry.accept(new NoseGunKillsCommand());
     }
 
     @Override
