@@ -4,19 +4,18 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
-import net.dv8tion.jda.api.entities.TextChannel;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
 import nl.elec332.discord.bot.core.api.util.SimpleCommand;
 
 import java.util.Objects;
 
 /**
- * Created by Elec332 on 18/08/2021
+ * Created by Elec332 on 09/10/2021
  */
-public class PlayerMappingCommand extends SimpleCommand<OutfitConfig> {
+public class RemovePlayerMappingCommand extends SimpleCommand<OutfitConfig> {
 
-    public PlayerMappingCommand(Runnable save) {
-        super("mapPlayer", "Binds a discord member to a PS2 player", "PS2Name", "Member_ping");
+    public RemovePlayerMappingCommand(Runnable save) {
+        super("RemovePlayerMapping", "Removes a discord member's PS2 mappings", "Member_ping");
         this.save = save;
     }
 
@@ -33,7 +32,7 @@ public class PlayerMappingCommand extends SimpleCommand<OutfitConfig> {
             return true;
         }
         Member mapped = Objects.requireNonNull(message.getMentionedMembers().isEmpty() ? member : message.getMentionedMembers().get(0));
-        outfitConfig.addPlayerMapping(mapped, strings.split(" ")[0], (TextChannel) channel, save);
+        outfitConfig.removeMappings(mapped, save);
         return true;
     }
 

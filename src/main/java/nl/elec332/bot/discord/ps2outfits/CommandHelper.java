@@ -2,16 +2,16 @@ package nl.elec332.bot.discord.ps2outfits;
 
 import com.google.gson.JsonObject;
 import net.dv8tion.jda.api.EmbedBuilder;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.*;
+import nl.elec332.bot.discord.ps2outfits.modules.outfit.MiscEmotes;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
-import nl.elec332.planetside2.ps2api.api.objects.player.IOutfit;
-import nl.elec332.planetside2.ps2api.api.objects.player.IPlayer;
-import nl.elec332.planetside2.ps2api.api.objects.player.IPlayerRequestList;
-import nl.elec332.planetside2.ps2api.api.objects.player.IPlayerResponseList;
+import nl.elec332.planetside2.ps2api.api.objects.IHasImage;
+import nl.elec332.planetside2.ps2api.api.objects.player.*;
 import nl.elec332.planetside2.ps2api.api.objects.player.request.ICharacterStatHistory;
 import nl.elec332.planetside2.ps2api.api.objects.world.IServer;
 import nl.elec332.planetside2.ps2api.util.NetworkUtil;
+import nl.elec332.planetside2.ps2api.util.PS2Class;
 
 import java.text.DecimalFormat;
 import java.time.Instant;
@@ -29,6 +29,55 @@ public class CommandHelper {
     private static final int MAX_FIELDS = 25;
 
     public static final DecimalFormat NUMBER_FORMAT = new DecimalFormat("#0.00");
+
+    public static User getUser(long id, JDA jda) {
+        try {
+            return jda.retrieveUserById(id).submit().join();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static Member getGuildMember(long id, Guild guild) {
+        try {
+            return guild.getJDA().retrieveUserById(id).flatMap(guild::retrieveMember).submit().join();
+        } catch (Exception e) {
+            User user = getUser(id, guild.getJDA());
+            System.out.println("Failed to retrieve member with ID: " + id + "  User: " + (user == null ? null : user.getName()));
+            return null;
+        }
+    }
+
+    public static void addIcons(Guild guild, IOutfit outfit, Map<PS2Class, Emote> emotes, Map<MiscEmotes, Emote> emotes2) {
+        if (guild == null) {
+            return;
+        }
+        List<ListedEmote> ets = guild.retrieveEmotes().submit().join();
+        Arrays.stream(PS2Class.values()).forEach(clazz -> {
+            IPlayerClass c = clazz.getClass(PS2BotConfigurator.API.getPlayerClasses());
+            emotes.put(clazz, addIcon(guild, ets, c.getMonolithicName(), c));
+        });
+        Arrays.stream(MiscEmotes.values()).forEach(img -> {
+            IHasImage obj = img.getImage(outfit, PS2BotConfigurator.API);
+            if (obj != null) {
+                emotes2.put(img, addIcon(guild, ets, Objects.requireNonNull(img.getName(outfit, obj)), obj));
+            }
+        });
+    }
+
+    private static Emote addIcon(Guild guild, List<ListedEmote> emotes, String name, IHasImage clazz) {
+        return emotes.stream()
+                .filter(le -> le.getName().equals(name))
+                .findFirst()
+                .map(le -> (Emote) le)
+                .orElseGet(() -> {
+                    try {
+                        return guild.createEmote(name, Icon.from(PS2BotConfigurator.API_ACCESSOR.getCensusAPI().getImage(Objects.requireNonNull(clazz)), Icon.IconType.PNG)).submit().join();
+                    } catch (Exception e) {
+                        throw new RuntimeException(name + " in " + guild.getName(), e);
+                    }
+                });
+    }
 
     public static Instant fromCal(Consumer<Calendar> mod) {
         Calendar cal = Calendar.getInstance();
@@ -62,8 +111,11 @@ public class CommandHelper {
         if (member == null) {
             return null;
         }
-        return config.getPlayer(member);
-        //return PS2BotConfigurator.API.getPlayerManager().getByName(trimPlayerName(member.getEffectiveName()));
+        IPlayer ret = config.getPlayer(member);
+        if (ret == null) {
+            return PS2BotConfigurator.API.getPlayerManager().getByName(trimPlayerName(member.getEffectiveName()));
+        }
+        return ret;
     }
 
     public static void postServerData(MessageChannel channel, IServer server) {

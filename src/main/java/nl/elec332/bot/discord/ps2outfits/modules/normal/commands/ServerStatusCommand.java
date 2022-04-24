@@ -19,18 +19,14 @@ public class ServerStatusCommand extends SimpleCommand<NormalModule> {
     }
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, NormalModule config, String... args) {
-        if (args.length == 1) {
-            String name = args[0];
-            IServer server = PS2BotConfigurator.API.getServers().getByName(name);
-            if (server == null) {
-                channel.sendMessage("Invalid server name: " + name).submit();
-                return true;
-            }
-            CommandHelper.postServerData(channel, server);
-        } else {
-            throw new UnsupportedOperationException("Too many args!");
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, NormalModule config, String args) {
+        IServer server = PS2BotConfigurator.API.getServers().getByName(args);
+        if (server == null) {
+            channel.sendMessage("Invalid server name: " + args).submit();
+            return true;
         }
+        CommandHelper.postServerData(channel, server);
+
         return true;
     }
 

@@ -21,7 +21,7 @@ public class OnlineMembersCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String args) {
         IOutfit outfit = config.getOutfit();
         EmbedBuilder builder = new EmbedBuilder()
                 .setTitle(outfit.getName() + " online members")
@@ -29,7 +29,7 @@ public class OnlineMembersCommand extends SimpleCommand<OutfitConfig> {
                         .map(IOutfitMember::getPlayerName)
                         .sorted()
                         .collect(Collectors.joining("\n")));
-        channel.sendMessage(builder.build()).submit();
+        channel.sendMessageEmbeds(builder.build()).submit();
         return true;
     }
 

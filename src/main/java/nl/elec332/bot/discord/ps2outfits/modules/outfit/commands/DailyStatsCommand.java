@@ -31,7 +31,7 @@ public class DailyStatsCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String args) {
         IOutfit outfit = config.getOutfit();
         Collection<Long> onlineMembers = outfit.getPlayerIds(p -> p.getLastPlayerActivity().isAfter(Instant.now().minus(1, ChronoUnit.DAYS)));
         if (onlineMembers.isEmpty()) {

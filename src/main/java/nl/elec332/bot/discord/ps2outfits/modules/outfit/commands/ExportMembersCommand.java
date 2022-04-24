@@ -36,7 +36,7 @@ public class ExportMembersCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String args) {
         IOutfit outfit = config.getOutfit();
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Members");
@@ -111,13 +111,13 @@ public class ExportMembersCommand extends SimpleCommand<OutfitConfig> {
                 sheet.autoSizeColumn(i);
             }
 
-            if (args.length > 0 && args[0].equals("full")) {
+            if (args.equals("full")) {
                 XSSFSheet dcSheet = workbook.createSheet("Discord");
                 Row dcRow = dcSheet.createRow(0);
                 dcRow.createCell(0).setCellValue("Discord Name:");
                 dcRow.createCell(1).setCellValue("Discord Ranks:");
                 dcRow.createCell(2).setCellValue("Server:");
-                dcRow.createCell(3).setCellValue("outfit:");
+                dcRow.createCell(3).setCellValue("Outfit:");
                 AtomicInteger dcCounter = new AtomicInteger(2);
                 members.stream()
                         .filter(m -> !processed.contains(m))
@@ -127,7 +127,7 @@ public class ExportMembersCommand extends SimpleCommand<OutfitConfig> {
                             }
                             IPlayer player = null;
                             try {
-                                player = config.getPlayer(m);
+                                player = CommandHelper.getPlayer(config, m, null);
                             } catch (Exception e) {
                                 System.out.println("----------------------");
                                 System.out.println(m.getEffectiveName());

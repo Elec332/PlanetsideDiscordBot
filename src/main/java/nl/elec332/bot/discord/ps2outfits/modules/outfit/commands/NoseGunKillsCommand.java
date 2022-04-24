@@ -25,8 +25,8 @@ public class NoseGunKillsCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
-        IPlayer player = CommandHelper.getPlayer(config, member, args.length == 0 ? null : args[0]);
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String args) {
+        IPlayer player = CommandHelper.getPlayer(config, member, args.isEmpty() ? null : args);
         if (player == null) {
             channel.sendMessage("Failed to find player").submit();
             return true;

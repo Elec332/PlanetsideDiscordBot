@@ -19,7 +19,7 @@ public class WeeklyKdCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String args) {
         CommandHelper.postKDInfo(channel, config.getOutfit(), "this week", CommandHelper.fromCal(cal -> cal.set(Calendar.DAY_OF_WEEK, cal.getFirstDayOfWeek())), h -> h.getWeek(1));
         return true;
     }

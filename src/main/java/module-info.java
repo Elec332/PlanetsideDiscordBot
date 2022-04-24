@@ -23,6 +23,7 @@ module nl.elec332.bot.discord.ps2outfits {
     provides IBotModule with OutfitModule, NormalModule;
     provides IBotConfigurator with PS2BotConfigurator;
 
-    opens nl.elec332.bot.discord.ps2outfits.modules.outfit to com.google.gson;
+    opens nl.elec332.bot.discord.ps2outfits.modules.outfit;
+//    exports nl.elec332.bot.discord.ps2outfits.modules.outfit to nl.elec332.discord.bot.core;
 
 }

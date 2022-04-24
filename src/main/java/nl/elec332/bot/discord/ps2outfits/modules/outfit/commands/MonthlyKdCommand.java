@@ -19,7 +19,7 @@ public class MonthlyKdCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String args) {
         CommandHelper.postKDInfo(channel, config.getOutfit(), "this month", CommandHelper.fromCal(cal -> cal.set(Calendar.DAY_OF_MONTH, 0)), h -> h.getMonth(1));
         return true;
     }

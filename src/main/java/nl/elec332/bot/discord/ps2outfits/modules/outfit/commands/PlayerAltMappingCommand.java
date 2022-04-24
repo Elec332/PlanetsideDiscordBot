@@ -23,7 +23,7 @@ public class PlayerAltMappingCommand extends SimpleCommand<OutfitConfig> {
     private final Runnable save;
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig outfitConfig, String... strings) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig outfitConfig, String strings) {
         if (!member.hasPermission(Permission.ADMINISTRATOR)) {
             channel.sendMessage("You can only use this command as an administrator!").submit();
             return true;
@@ -33,7 +33,7 @@ public class PlayerAltMappingCommand extends SimpleCommand<OutfitConfig> {
             return true;
         }
         Member mapped = Objects.requireNonNull(message.getMentionedMembers().isEmpty() ? member : message.getMentionedMembers().get(0));
-        outfitConfig.addPlayerAltMapping(mapped, strings[0].split(" ")[0], (TextChannel) channel, save);
+        outfitConfig.addPlayerAltMapping(mapped, strings.split(" ")[0], (TextChannel) channel, save);
         return true;
     }
 

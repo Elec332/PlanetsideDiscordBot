@@ -21,7 +21,7 @@ public class TrackAlertsCommand extends SimpleCommand<OutfitConfig> {
     private final Runnable save;
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String args) {
         Set<Long> c = config.getFacilityEventChannels();
         if (c.contains(channel.getIdLong())) {
             c.remove(channel.getIdLong());

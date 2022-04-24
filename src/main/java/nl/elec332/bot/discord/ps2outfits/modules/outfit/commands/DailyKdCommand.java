@@ -20,7 +20,7 @@ public class DailyKdCommand extends SimpleCommand<OutfitConfig> {
     }
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... args) {
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String args) {
         CommandHelper.postKDInfo(channel, config.getOutfit(), "today", Instant.now().minus(1, ChronoUnit.DAYS), h -> h.getDay(1));
         return true;
     }

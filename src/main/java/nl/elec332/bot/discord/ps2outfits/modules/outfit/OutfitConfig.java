@@ -1,30 +1,28 @@
 package nl.elec332.bot.discord.ps2outfits.modules.outfit;
 
-import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.Permission;
-import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.Member;
-import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.*;
+import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import nl.elec332.bot.discord.ps2outfits.CommandHelper;
 import nl.elec332.bot.discord.ps2outfits.PS2BotConfigurator;
 import nl.elec332.discord.bot.core.api.util.JDAConsumer;
 import nl.elec332.planetside2.ps2api.api.objects.player.IOutfit;
 import nl.elec332.planetside2.ps2api.api.objects.player.IOutfitMember;
 import nl.elec332.planetside2.ps2api.api.objects.player.IPlayer;
-import nl.elec332.planetside2.ps2api.api.objects.player.ISlimPlayer;
 import nl.elec332.planetside2.ps2api.api.objects.registry.IPS2ObjectReference;
 import nl.elec332.planetside2.ps2api.api.objects.world.IServer;
 import nl.elec332.planetside2.ps2api.api.streaming.IStreamingService;
-import nl.elec332.planetside2.ps2api.api.streaming.event.IPlayerFacilityEvent;
-import nl.elec332.planetside2.ps2api.api.streaming.event.base.IPlayerStreamingEvent;
 import nl.elec332.planetside2.ps2api.api.streaming.request.IEventServiceFactory;
+import nl.elec332.planetside2.ps2api.util.PS2Class;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,6 +37,10 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
         this.facilityEventChannels = new HashSet<>();
         this.memberToPlayerMap = new HashMap<>();
         this.memberToPlayerAltMap = new HashMap<>();
+        this.classEmotes = new EnumMap<>(PS2Class.class);
+        this.miscEmotes = new EnumMap<>(MiscEmotes.class);
+        this.messageRoleMap = new HashMap<>();
+        this.confirms = new HashMap<>();
     }
 
     private static transient final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
@@ -56,11 +58,15 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
 
     private transient long serverId;
     private transient IStreamingService streamingService;
+    private final transient Map<PS2Class, Emote> classEmotes;
+    private final transient Map<MiscEmotes, Emote> miscEmotes;
+    private final transient Map<Long, Consumer<Member>> confirms;
 
     private IPS2ObjectReference<? extends IOutfit> outfit;
     private final Set<Long> facilityEventChannels;
     private final Map<Long, Long> memberToPlayerMap;
     private final Map<Long, Set<Long>> memberToPlayerAltMap;
+    private final Map<String, Long> messageRoleMap;
 
     public void setOutfit(IOutfit outfit) {
         this.outfit = PS2BotConfigurator.API.getOutfitManager().getReference(Objects.requireNonNull(outfit).getId());
@@ -79,7 +85,31 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
         return facilityEventChannels;
     }
 
-    public void addPlayerMapping(Member member, String playerName, TextChannel channel, Runnable save) {
+    public Map<PS2Class, Emote> getClassEmotes() {
+        return this.classEmotes;
+    }
+
+    public Map<MiscEmotes, Emote> getMiscEmotes() {
+        return this.miscEmotes;
+    }
+
+    public void addConfirm(long id, Consumer<Member> thing) {
+        this.confirms.put(id, thing);
+    }
+
+    public boolean hasMappedAccount(Member member) {
+        long id = member.getIdLong();
+        return memberToPlayerMap.containsKey(id);// || memberToPlayerAltMap.containsKey(id);
+    }
+
+    public void removeMappings(Member member, Runnable save) {
+        long id = member.getIdLong();
+        memberToPlayerMap.remove(id);
+        memberToPlayerAltMap.remove(id);
+        save.run();
+    }
+
+    public void addPlayerMapping(Member member, String playerName, MessageChannel channel, Runnable save) {
         if (playerName.trim().isEmpty()) {
             channel.sendMessage("Removed mapping for " + member.getEffectiveName()).submit();
             memberToPlayerMap.remove(member.getIdLong());
@@ -87,12 +117,18 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
             return;
         }
         IPlayer player = PS2BotConfigurator.API.getPlayerManager().getByName(playerName);
-        if (!player.getName().equalsIgnoreCase(playerName)) {
+        if (player == null || !player.getName().equalsIgnoreCase(playerName)) {
             channel.sendMessage("No player found matching name \"" + playerName + "\"").submit();
             return;
-        } else {
-            channel.sendMessage("Successfully mapped " + member.getEffectiveName() + " to PS2 player " + player.getName()).submit();
         }
+        addPlayerMapping(member, player, channel, save);
+    }
+
+    public void addPlayerMapping(Member member, IPlayer player, MessageChannel channel, Runnable save) {
+        if (player == null) {
+            return;
+        }
+        channel.sendMessage("Successfully mapped " + member.getEffectiveName() + " to PS2 player " + player.getName()).submit();
         memberToPlayerMap.put(member.getIdLong(), player.getId());
         save.run();
     }
@@ -105,7 +141,7 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
             return;
         }
         IPlayer player = PS2BotConfigurator.API.getPlayerManager().getByName(playerName);
-        if (!player.getName().equalsIgnoreCase(playerName)) {
+        if (player == null || !player.getName().equalsIgnoreCase(playerName)) {
             channel.sendMessage("No player found matching name \"" + playerName + "\"").submit();
             return;
         } else {
@@ -115,26 +151,51 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
         save.run();
     }
 
-    public IPlayer getPlayer(Member member) {
+    private static final String[] SPLITS = {"/", "-"};
+
+    public IPlayer getDirectMapping(Member member) {
         if (memberToPlayerMap.containsKey(member.getIdLong())) {
             return PS2BotConfigurator.API.getPlayerManager().get(memberToPlayerMap.get(member.getIdLong()));
         }
+        return null;
+    }
+
+    public Collection<IPlayer> getAltMapping(Member member) {
+        Set<Long> alts = memberToPlayerAltMap.get(member.getIdLong());
+        if (alts != null && !alts.isEmpty()) {
+            return alts.stream()
+                    .map(PS2BotConfigurator.API.getPlayerManager()::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        }
+        return null;
+    }
+
+    public IPlayer getPlayer(Member member) {
+        IPlayer ret = getDirectMapping(member);
+        if (ret != null) {
+            return ret;
+        }
         String name = CommandHelper.trimPlayerName(member.getEffectiveName()).toLowerCase(Locale.ROOT);
-        String[] parts = name.split("/");
+        Collection<String> parts = Collections.singleton(name);
+        for (String spl : SPLITS) {
+            parts = parts.stream()
+                    .map(s -> s.split(spl))
+                    .flatMap(Arrays::stream)
+                    .collect(Collectors.toList());
+        }
         for (String s : parts) {
             s = s.trim();
             if (s.isEmpty()) {
                 continue;
             }
             IPlayer player = PS2BotConfigurator.API.getPlayerManager().getByName(s);
-            if (player == null) {
-                return null;
+            if (player != null) {
+                String pn = player.getName().toLowerCase(Locale.ROOT);
+                if (checkName(s, pn)) {
+                    return player;
+                }
             }
-            String pn = player.getName().toLowerCase(Locale.ROOT);
-            if (!checkName(s, pn)) {
-                return null;
-            }
-            return player;
         }
         return null;
     }
@@ -177,7 +238,7 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
                     .orElse(null);
         }
         String pn = player.getPlayerName().toLowerCase(Locale.ROOT);
-        return members.stream().filter(m -> !memberToPlayerMap.containsKey(m.getIdLong()) && !memberToPlayerAltMap.containsKey(m.getIdLong())).filter(m -> checkName(m.getEffectiveName().toLowerCase(Locale.ROOT), pn)).findFirst().orElse(null);
+        return members.stream().filter(m -> !memberToPlayerMap.containsKey(m.getIdLong())).filter(m -> checkName(m.getEffectiveName().toLowerCase(Locale.ROOT), pn)).findFirst().orElse(null);
     }
 
     @Override
@@ -185,68 +246,53 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
         this.serverId = value;
     }
 
+    public Stream<Member> getListeners(String type, Guild server) {
+        if (!messageRoleMap.containsKey(type)) {
+            return Stream.empty();
+        }
+        Role role = server.getRoleById(messageRoleMap.get(type));
+        if (role == null) {
+            return Stream.empty();
+        }
+        try {
+            return server.findMembersWithRoles(role).get().stream();
+        } catch (Exception e) {
+            return Stream.empty();
+        }
+    }
+
     @Override
     public void onJDAConnected(JDA jda) {
+        long id = jda.getSelfUser().getIdLong();
         TimeZone timeZone = TimeZone.getTimeZone("Europe/Amsterdam");
         this.streamingService = PS2BotConfigurator.API_ACCESSOR.createStreamingService();
         setupStreaming();
-        IEventServiceFactory eventServiceFactory = PS2BotConfigurator.API_ACCESSOR.getEventServiceFactory();
-        this.streamingService.addListener(eventServiceFactory.getFacilityControlType(), event -> {
-            IOutfit outfit = event.getOutfit();
-            if (event.getFacility() == null || outfit == null) {
-                return;
+        CommandHelper.addIcons(getGuild(jda), getOutfit(), getClassEmotes(), getMiscEmotes());
+        StreamingEventHandler.setup(this.streamingService, () -> streamChannels(jda), facilityEventChannels::isEmpty, this::getOutfit, () -> timeZone);
+        jda.addEventListener(new ListenerAdapter() {
+
+            @Override
+            public void onGuildMessageReactionAdd(GuildMessageReactionAddEvent event) {
+                if (event.getGuild().getIdLong() != serverId) {
+                    return;
+                }
+                if (event.getUserIdLong() == id) {
+                    return;
+                }
+                MessageReaction.ReactionEmote re = event.getReactionEmote();
+                if (re.isEmoji()) {
+                    if (re.getName().equals(MiscEmotes.RED_CROSS_EMOJI)) {
+                        confirms.remove(event.getMessageIdLong());
+                    } else if (re.getName().equals(MiscEmotes.CHECK_MARK_EMOJI)) {
+                        Consumer<Member> c = confirms.remove(event.getMessageIdLong());
+                        if (c != null) {
+                            event.retrieveMember().queue(c);
+                        }
+                    }
+                }
             }
-            if (event.getOutfitId() != this.outfit.getId()) {
-                return;
-            }
-            if (facilityEventChannels.isEmpty() || event.getOldFaction().getId() == event.getNewFaction().getId()) {
-                return;
-            }
-            Collection<IPlayerFacilityEvent> events = PS2BotConfigurator.API_ACCESSOR.getStreamEventPoller().getPlayerEvents(event);
-            Collection<ISlimPlayer> players = events.isEmpty() ? Collections.emptyList() : PS2BotConfigurator.API.getPlayerRequestHandler().getSlimPlayers(events.stream().map(IPlayerStreamingEvent::getPlayerId).collect(Collectors.toList()));
-            List<String> op = outfit.getOnlineMembers()
-                    .filter(p -> events.stream().anyMatch(e -> p.getPlayerId() == e.getPlayerId()))
-                    .map(IOutfitMember::getPlayerName)
-                    .collect(Collectors.toList());
-            EmbedBuilder builder = new EmbedBuilder()
-                    .setTitle(outfit.getName() + " captured " + event.getFacility().getName())
-                    .addField("Continent", event.getContinent().getName(), true)
-                    .addField("Attackers", "" + players.size(), true)
-                    .addField("Time", DATE_FORMAT.format(event.getTimeStamp().atZone(timeZone.toZoneId())) + " " + timeZone.getDisplayName(timeZone.inDaylightTime(new Date()), TimeZone.SHORT), true)
-                    .addField("Outfit members present (" + op.size() + "/" + players.size() + " attackers):", String.join(", ", op), false);
-            streamChannels(jda)
-                    .forEach(channel -> channel.sendMessageEmbeds(builder.build()).submit());
+
         });
-        this.streamingService.addListener(eventServiceFactory.getMetaGameEventType(), event -> {
-            System.out.println(event);
-            EmbedBuilder builder = new EmbedBuilder()
-                    .setTitle(event.getEvent().getName() + " event " + event.getEventState().getName() + " on " + event.getContinent().getName())
-                    .addField("NC territory", NUMBER_FORMAT.format(event.getNCTerritory()) + "%", true)
-                    .addField("TR territory", NUMBER_FORMAT.format(event.getTRTerritory()) + "%", true)
-                    .addField("VS territory", NUMBER_FORMAT.format(event.getVSTerritory()) + "%", true);
-            streamChannels(jda)
-                    .forEach(channel -> channel.sendMessageEmbeds(builder.build()).submit());
-        });
-        this.streamingService.addListener(eventServiceFactory.getContinentLockType(), event -> {
-            EmbedBuilder builder = new EmbedBuilder()
-                    .setTitle(event.getContinent().getName() + " was locked by " + event.getTriggeringFaction().getName())
-                    .addField("NC population", event.getNCPopulation() + "%", true)
-                    .addField("TR population", event.getTRPopulation() + "%", true)
-                    .addField("VS population", event.getVSPopulation() + "%", true);
-            streamChannels(jda)
-                    .forEach(channel -> channel.sendMessageEmbeds(builder.build()).submit());
-        });
-        this.streamingService.addListener(eventServiceFactory.getContinentUnlockType(), event -> {
-            EmbedBuilder builder = new EmbedBuilder()
-                    .setTitle(event.getContinent().getName() + " was unlocked by " + event.getTriggeringFaction().getName())
-                    .addField("NC population", event.getNCPopulation() + "%", true)
-                    .addField("TR population", event.getTRPopulation() + "%", true)
-                    .addField("VS population", event.getVSPopulation() + "%", true);
-            streamChannels(jda)
-                    .forEach(channel -> channel.sendMessageEmbeds(builder.build()).submit());
-        });
-        this.streamingService.setExceptionHandler(t -> streamChannels(jda)
-                .forEach(channel -> channel.sendMessage("Received garbage from streaming API, causing " + t.getMessage()).submit()));
     }
 
     private Stream<TextChannel> streamChannels(JDA jda) {

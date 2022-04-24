@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import nl.elec332.bot.discord.ps2outfits.CommandHelper;
 import nl.elec332.bot.discord.ps2outfits.PS2BotConfigurator;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
 import nl.elec332.discord.bot.core.api.util.SimpleCommand;
@@ -23,23 +24,23 @@ public class SetOutfitCommand extends SimpleCommand<OutfitConfig> {
     private static final String BANNED = "<>[]";
 
     @Override
-    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String... arg) {
-        String args = arg[0];
+    public boolean executeCommand(MessageChannel channel, Message message, Member member, OutfitConfig config, String arg) {
         if (member.hasPermission(Permission.ADMINISTRATOR)) {
             for (char c : BANNED.toCharArray()) {
-                if (args.contains("" + c)) {
+                if (arg.contains("" + c)) {
                     channel.sendMessage("An outfit name or tag cannot contain any of the following characters: \"" + BANNED + "\"").submit();
                     return true;
                 }
             }
-            IOutfit outfit = PS2BotConfigurator.API.getOutfitManager().getByName(args);
+            IOutfit outfit = PS2BotConfigurator.API.getOutfitManager().getByName(arg);
             if (outfit == null) {
-                channel.sendMessage("Failed to find outfit: \"" + args + "\"\nPlease make sure you give the bot your full outfit name or outfit tag.").submit();
+                channel.sendMessage("Failed to find outfit: \"" + arg + "\"\nPlease make sure you give the bot your full outfit name or outfit tag.").submit();
                 return true;
             }
 
             config.setOutfit(outfit);
             save.run();
+            CommandHelper.addIcons(config.getGuild(channel.getJDA()), config.getOutfit(), config.getClassEmotes(), config.getMiscEmotes());
             channel.sendMessage("Successfully set outfit ID to: " + outfit.getId() + " (" + outfit.getName() + ") for this server!").submit();
         } else {
             channel.sendMessage("You can only use this command as an administrator!").submit();

@@ -28,6 +28,7 @@ public class PS2BotConfigurator implements IBotConfigurator {
     public void handleProperties(Function<String, String> propertyGetter, List<String> args) {
         IPS2APIAccessor accessor = ServiceLoader.load(IPS2APIAccessor.class).findFirst().get();
         accessor.setServiceId(propertyGetter.apply(PS2_SID_PROP));
+        System.out.println(propertyGetter.apply(PS2_SID_PROP));
         API_ACCESSOR = accessor;
         if (args.contains("-noSSL")) {
             API_ACCESSOR.getCensusAPI().disableSSL();

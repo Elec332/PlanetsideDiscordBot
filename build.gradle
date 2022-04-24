@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    implementation "nl.elec332.planetside2:planetside2api:1.0-Beta4"
-    implementation "nl.elec332.discord.bot:discordbotcore:1.0-Beta4"
+    implementation "nl.elec332.planetside2:planetside2api:1.0-Beta5"
+    implementation "nl.elec332.discord.bot:discordbotcore:1.1.0"
     implementation "nl.elec332.wrapped.modular:poi-module:1.0-5"
 }
