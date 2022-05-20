@@ -10,9 +10,12 @@ import nl.elec332.bot.discord.ps2outfits.modules.outfit.MiscEmotes;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
 import nl.elec332.discord.bot.core.api.util.SimpleCommand;
 import nl.elec332.discord.bot.core.util.AsyncExecutor;
+import nl.elec332.planetside2.ps2api.api.objects.player.IOutfit;
 import nl.elec332.planetside2.ps2api.api.objects.player.IPlayer;
+import nl.elec332.planetside2.ps2api.api.objects.registry.IPS2ObjectReference;
 
 import java.util.List;
+import java.util.Locale;
 
 
 /**
@@ -34,38 +37,51 @@ public class CheckCharactersCommand extends SimpleCommand<OutfitConfig> {
             return true;
         }
         Task<List<Member>> mt = ((TextChannel) channel).getGuild().loadMembers();
-        System.out.println("CheckCharacters");
-        mt.onSuccess(members -> {
-            members.stream()
-                    .filter(m -> !config.hasMappedAccount(m))
-                    .filter(m -> !m.getUser().isBot())
-                    .forEach(m -> {
-                        IPlayer player;
-                        try {
-                            player = config.getPlayer(m);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            return;
-                        }
-                        System.out.println(m.getEffectiveName() + "   " + player);
-                        if (player != null && player.getOutfit() != null && player.getOutfit().getId() == config.getOutfit().getId()) {
-                            AsyncExecutor.executeAsync(() -> {
-                                Message msg = channel.sendMessage(".").submit().join();
-                                msg.editMessage(m.getAsMention() + " to PS2 player: " + player.getName()).submit();
-                                msg.addReaction(MiscEmotes.CHECK_MARK_EMOJI).queue();
-                                msg.addReaction(MiscEmotes.RED_CROSS_EMOJI).queue();
-                                config.addConfirm(msg.getIdLong(), mbr -> {
-                                    synchronized (save) {
-                                        if (mbr.hasPermission(Permission.ADMINISTRATOR)) {
-                                            config.addPlayerMapping(m, player, channel, save);
-                                        }
+        AsyncExecutor.executeAsync(() -> {
+            mt.onSuccess(members -> {
+                members.stream()
+                        .filter(m -> !config.hasMappedAccount(m))
+                        .filter(m -> !m.getUser().isBot())
+                        .forEach(m -> {
+                            IPlayer player;
+                            try {
+                                player = config.getPlayer(m);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                return;
+                            }
+                            System.out.println(m.getEffectiveName() + "   " + player);
+                            if (player == null) {
+                                return;
+                            }
+                            boolean sameServer = player.getServer().getId() == config.getOutfit().getServer().getId();
+                            IPS2ObjectReference<IOutfit> outfit = player.getOutfit();
+                            if (player.getOutfit() != null && player.getOutfit().getId() == config.getOutfit().getId() || "all".equals(args) || "server".equals(args) && sameServer || "outfits".equals(args) && outfit != null && player.getFaction().getId() == config.getOutfit().getFaction().getId()) {
+                                AsyncExecutor.executeAsync(() -> {
+                                    String os = ", (No outfit)";
+                                    if (outfit != null) {
+                                        os = ", (Outfit: " + player.getOutfit().getObject().getTag() + ")";
                                     }
+                                    String pre = "";
+                                    if (!sameServer) {
+                                        pre = "[DIFFERENT SERVER!] ";
+                                    }
+                                    Message msg = channel.sendMessage(".").submit().join();
+                                    msg.editMessage(pre + m.getAsMention() + " to PS2 player: " + player.getName() + " [" + player.getFaction().getTag().toUpperCase(Locale.ROOT) + ", " + player.getServer().getName() + "]" + os).submit();
+                                    msg.addReaction(MiscEmotes.CHECK_MARK_EMOJI).queue();
+                                    msg.addReaction(MiscEmotes.RED_CROSS_EMOJI).queue();
+                                    config.addConfirm(msg.getIdLong(), mbr -> {
+                                        synchronized (save) {
+                                            if (mbr.hasPermission(Permission.ADMINISTRATOR)) {
+                                                config.addPlayerMapping(m, player, channel, save);
+                                            }
+                                        }
+                                    });
                                 });
-                            });
-                        }
-                    });
-            channel.sendMessage("Character check finished").submit();
-
+                            }
+                        });
+                channel.sendMessage("Character check finished").submit();
+            });
         });
         return true;
     }

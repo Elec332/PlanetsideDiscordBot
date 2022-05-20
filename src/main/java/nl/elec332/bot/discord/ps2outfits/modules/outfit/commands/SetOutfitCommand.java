@@ -4,11 +4,15 @@ import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageChannel;
+import net.dv8tion.jda.api.entities.Role;
 import nl.elec332.bot.discord.ps2outfits.CommandHelper;
 import nl.elec332.bot.discord.ps2outfits.PS2BotConfigurator;
 import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitConfig;
+import nl.elec332.bot.discord.ps2outfits.modules.outfit.OutfitRoleTypes;
 import nl.elec332.discord.bot.core.api.util.SimpleCommand;
 import nl.elec332.planetside2.ps2api.api.objects.player.IOutfit;
+
+import java.util.List;
 
 /**
  * Created by Elec332 on 22/05/2021
@@ -39,6 +43,10 @@ public class SetOutfitCommand extends SimpleCommand<OutfitConfig> {
             }
 
             config.setOutfit(outfit);
+            List<Role> roles = message.getGuild().getRolesByName(outfit.getTag(), true);
+            if (roles.size() == 1) {
+                config.setOutfitRole(OutfitRoleTypes.MEMBER, roles.get(0));
+            }
             save.run();
             CommandHelper.addIcons(config.getGuild(channel.getJDA()), config.getOutfit(), config.getClassEmotes(), config.getMiscEmotes());
             channel.sendMessage("Successfully set outfit ID to: " + outfit.getId() + " (" + outfit.getName() + ") for this server!").submit();

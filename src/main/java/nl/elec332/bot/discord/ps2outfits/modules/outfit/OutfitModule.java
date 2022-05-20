@@ -103,6 +103,9 @@ public class OutfitModule extends AbstractGSONModule<OutfitConfig> {
         registry.accept(new CheckCharactersCommand(this::saveSettingsFile));
         registry.accept(new ListCharactersCommand());
         registry.accept(new RemovePlayerMappingCommand(this::saveSettingsFile));
+        registry.accept(new ShowMemberRolesCommand());
+        registry.accept(new SetMemberRolesMapCommand(this::saveSettingsFile));
+        registry.accept(new CheckRolesCommand());
     }
 
     @Override

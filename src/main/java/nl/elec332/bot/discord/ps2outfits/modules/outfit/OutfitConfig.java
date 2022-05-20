@@ -41,6 +41,7 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
         this.miscEmotes = new EnumMap<>(MiscEmotes.class);
         this.messageRoleMap = new HashMap<>();
         this.confirms = new HashMap<>();
+        this.outfitRoleMap = new HashMap<>();
     }
 
     private static transient final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
@@ -67,6 +68,7 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
     private final Map<Long, Long> memberToPlayerMap;
     private final Map<Long, Set<Long>> memberToPlayerAltMap;
     private final Map<String, Long> messageRoleMap;
+    private final Map<String, Long> outfitRoleMap;
 
     public void setOutfit(IOutfit outfit) {
         this.outfit = PS2BotConfigurator.API.getOutfitManager().getReference(Objects.requireNonNull(outfit).getId());
@@ -91,6 +93,20 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
 
     public Map<MiscEmotes, Emote> getMiscEmotes() {
         return this.miscEmotes;
+    }
+
+    public void setOutfitRole(OutfitRoleTypes type, Role role) {
+        if (role == null) {
+            return;
+        }
+        this.outfitRoleMap.put(type.getRoleName(), role.getIdLong());
+    }
+
+    public Role getOutfitRole(OutfitRoleTypes type, Guild jda) {
+        if (!outfitRoleMap.containsKey(type.getRoleName())) {
+            return null;
+        }
+        return jda.getRoleById(outfitRoleMap.get(type.getRoleName()));
     }
 
     public void addConfirm(long id, Consumer<Member> thing) {
@@ -168,7 +184,7 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
         }
-        return null;
+        return Collections.emptyList();
     }
 
     public IPlayer getPlayer(Member member) {
@@ -200,13 +216,13 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
         return null;
     }
 
-    public Member getMemberFor(IOutfitMember player, Collection<Member> members) {
-        if (members.isEmpty()) {
+    public Member getCachedMemberFor(long player, Collection<Member> members) {
+        if (members == null || members.isEmpty()) {
             return null;
         }
-        if (memberToPlayerMap.containsValue(player.getPlayerId())) {
+        if (memberToPlayerMap.containsValue(player)) {
             return memberToPlayerMap.entrySet().stream()
-                    .filter(e -> e.getValue() == player.getPlayerId())
+                    .filter(e -> e.getValue() == player)
                     .findFirst()
                     .map(e -> {
                         Member ret = members.stream()
@@ -221,9 +237,9 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
                     .orElse(null);
         }
         Set<Long> l = memberToPlayerAltMap.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
-        if (l.contains(player.getPlayerId())) {
+        if (l.contains(player)) {
             return memberToPlayerAltMap.entrySet().stream()
-                    .filter(e -> e.getValue().contains(player.getPlayerId()))
+                    .filter(e -> e.getValue().contains(player))
                     .findFirst()
                     .map(e -> {
                         Member ret = members.stream()
@@ -236,6 +252,17 @@ public class OutfitConfig implements LongConsumer, Serializable, JDAConsumer {
                         return ret;
                     })
                     .orElse(null);
+        }
+        return null;
+    }
+
+    public Member getMemberFor(IOutfitMember player, Collection<Member> members) {
+        if (members == null || members.isEmpty()) {
+            return null;
+        }
+        Member ret = getCachedMemberFor(player.getPlayerId(), members);
+        if (ret != null) {
+            return ret;
         }
         String pn = player.getPlayerName().toLowerCase(Locale.ROOT);
         return members.stream().filter(m -> !memberToPlayerMap.containsKey(m.getIdLong())).filter(m -> checkName(m.getEffectiveName().toLowerCase(Locale.ROOT), pn)).findFirst().orElse(null);
